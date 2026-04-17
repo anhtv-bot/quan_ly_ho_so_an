@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --law-red: #8b0000;
+  --law-red-dark: #730000;
+  --law-gray: #f8f9fa;
+  --law-card-border: #8b0000;
+  --law-text: #111827;
+  --law-text-light: #ffffff;
+}
+
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  background-color: var(--law-gray);
+  color: var(--law-text);
+}
+
+.bg-law-red {
+  background-color: var(--law-red) !important;
+}
+
+.text-law-red {
+  color: var(--law-red) !important;
+}
+
+.text-law-white {
+  color: var(--law-text-light) !important;
+}
+
+.btn-law-red {
+  background-color: var(--law-red);
+  color: var(--law-text-light);
+}
+
+.btn-law-red:hover {
+  background-color: var(--law-red-dark);
+}
+
+.card-law {
+  background-color: #ffffff;
+  border-top: 4px solid var(--law-card-border);
+}
+
+.icon-law-red {
+  color: var(--law-red) !important;
+}
+
+.text-law-red-strong {
+  color: var(--law-red) !important;
+}
+.bg-law-gray {
+  background-color: var(--law-gray) !important;
+}
