@@ -6,12 +6,12 @@ import AddCaseForm from './components/AddCaseForm'
 import UploadFile from './components/UploadFile'
 import Login from './components/Login'
 
-const API_BASE = ''
+const API_BASE = 'http://localhost:8001'
 
 function App() {
   const [cases, setCases] = useState([])
   const [stats, setStats] = useState({})
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true')
   const [searchTerm, setSearchTerm] = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const [backendAvailable, setBackendAvailable] = useState(true)
@@ -21,6 +21,10 @@ function App() {
     fetchCases()
     fetchStats()
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem('isLoggedIn', isLoggedIn ? 'true' : 'false')
+  }, [isLoggedIn])
 
   const fetchCases = async () => {
     try {
@@ -71,6 +75,11 @@ function App() {
     }
   }
 
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+    localStorage.removeItem('isLoggedIn')
+  }
+
   const getCaseCategory = (caseItem) => {
     const now = new Date()
     const startDate = new Date(caseItem.ngay_thu_ly)
@@ -89,18 +98,26 @@ function App() {
 
   const filteredCases = cases.filter(caseItem => {
     const searchLower = searchTerm.toLowerCase()
-    const tenDuongSu = caseItem.ten_duong_su?.toString().toLowerCase() || ''
+    const tenDuongSu = caseItem.duong_su?.toString().toLowerCase() || ''
     const loaiAn = caseItem.loai_an?.toString().toLowerCase() || ''
-    const trangThai = caseItem.trang_thai?.toString().toLowerCase() || ''
+    const trangThai = caseItem.trang_thai_giai_quyet?.toString().toLowerCase() || ''
     const bienLai = caseItem.bien_lai_an_phi?.toString().toLowerCase() || ''
     const ngayThuLy = caseItem.ngay_thu_ly ? new Date(caseItem.ngay_thu_ly).toLocaleDateString('vi-VN') : ''
+    const ngayXetXu = caseItem.ngay_xet_xu ? new Date(caseItem.ngay_xet_xu).toLocaleDateString('vi-VN') : ''
+    const qdCnstt = caseItem.quan_he_phap_luat?.toString().toLowerCase() || ''
+    const ghiChu = caseItem.ghi_chu?.toString().toLowerCase() || ''
+    const maHoa = caseItem.ma_hoa ? 'đã mã hóa' : 'chưa mã hóa'
 
     return (
       tenDuongSu.includes(searchLower) ||
       loaiAn.includes(searchLower) ||
       trangThai.includes(searchLower) ||
-      ngayThuLy.includes(searchTerm) ||
-      bienLai.includes(searchLower)
+      ngayThuLy.includes(searchLower) ||
+      ngayXetXu.includes(searchLower) ||
+      bienLai.includes(searchLower) ||
+      qdCnstt.includes(searchLower) ||
+      ghiChu.includes(searchLower) ||
+      maHoa.includes(searchLower)
     )
   })
 
@@ -139,7 +156,7 @@ function App() {
                 </svg>
               </button>
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200">
-                <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Đăng xuất</button>
+                <button onClick={handleLogout} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Đăng xuất</button>
               </div>
             </div>
           </div>

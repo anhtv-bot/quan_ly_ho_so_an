@@ -1,42 +1,22 @@
 {
   "cases": [
     {
-      "id": 1,
+      "id": 9,
       "stt": 1,
       "bien_lai_an_phi": "0007110 20.06.2024",
       "so_thu_ly": "167 09.10.2024",
-      "ngay_thu_ly": "2024-06-20T00:00:00.000Z",
-      "ten_duong_su": "Test",
-      "quan_he_tranh_chap": "Test",
-      "loai_an": "D\u00e2n s\u1ef1",
-      "trang_thai": "B\u1ea3n \u00e1n",
-      "han_giai_quyet": "2024-12-17T00:00:00+00:00"
-    },
-    {
-      "id": 2,
-      "stt": 2,
-      "bien_lai_an_phi": "0007110 20.06.2024",
-      "so_thu_ly": "167 09.10.2024",
-      "ngay_thu_ly": "2026-03-20T00:00:00.000Z",
-      "ten_duong_su": "Tr\u1ea7n Ho\u00e0ng Anh",
-      "quan_he_tranh_chap": "Y\u00eau c\u1ea7u x\u00e1c \u0111\u1ecbnh t\u00e0i s\u1ea3n",
-      "loai_an": "D\u00e2n s\u1ef1",
-      "trang_thai": "X\u00e9t x\u1eed",
-      "han_giai_quyet": "2026-09-16T00:00:00+00:00"
-    },
-    {
-      "id": 3,
-      "stt": 3,
-      "bien_lai_an_phi": "0007110 20.06.2003",
-      "so_thu_ly": "167 09.10.2023",
-      "ngay_thu_ly": "2025-06-20T00:00:00.000Z",
-      "ten_duong_su": "Tr\u1ea7n Ho\u00e0ng Anh",
-      "quan_he_tranh_chap": "Y\u00eau c\u1ea7u x\u00e1c \u0111\u1ecbnh t\u00e0i s\u1ea3n",
-      "loai_an": "KDTM",
-      "trang_thai": "\u0110\u00ecnh ch\u1ec9",
-      "han_giai_quyet": "2025-09-18T00:00:00+00:00"
+      "ngay_thu_ly": "2024-06-20",
+      "duong_su": "Tr\u1ea7n Ho\u00e0ng Anh",
+      "quan_he_phap_luat": "quy\u1ec1n th\u1eeba k\u1ebf",
+      "loai_an": "",
+      "ngay_xet_xu": "2020-12-12",
+      "qd_cnstt": "",
+      "trang_thai_giai_quyet": "\u0110\u00ecnh ch\u1ec9",
+      "ghi_chu": "",
+      "ma_hoa": false,
+      "han_giai_quyet": "2024-12-17T00:00:00"
     }
   ],
-  "next_id": 4,
-  "next_stt": 4
+  "next_id": 10,
+  "next_stt": 2
 }

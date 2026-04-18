@@ -48,6 +48,31 @@ node_modules/
 npm-debug.log
 yarn-error.log
 .npm
+
+# Database files
+data/cases.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build artifacts
+dist/
+build/
+
+# Docker
+.dockerignore
+
+# OS specific
+Thumbs.db
+ehthumbs.db
 .eslintcache
 
 # Build outputs

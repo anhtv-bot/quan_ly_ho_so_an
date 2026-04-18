@@ -2,14 +2,21 @@ from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from .database import SessionLocal, engine, Base
+from .database import SessionLocal, initialize_database
 from .crud import get_cases, get_case_by_id, create_case, update_case, delete_case, get_statistics
 from .schemas import Case as CaseSchema, CaseCreate, CaseUpdate
 from datetime import datetime
+from io import BytesIO
+import unicodedata
 from openpyxl import load_workbook
+
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 import os
 
-Base.metadata.create_all(bind=engine)
+initialize_database()
 
 app = FastAPI(title="Quản lý Hồ Sơ Án API")
 
@@ -71,44 +78,286 @@ def delete_existing_case(case_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Case not found")
     return {"message": "Case deleted"}
 
+HEADER_FIELD_ALIASES = {
+    'stt': {'stt', 'sothutu', 'so thutu', 'so thu tu', 'thutu', 'thu tu'},
+    'bien_lai_an_phi': {
+        'bienlaianphi', 'bien lai an phi', 'bien lai anphi', 'bien lai', 'bien lai an phi',
+        'bienlai', 'bien lai an phi', 'bien laianphi'
+    },
+    'so_thu_ly': {'sothuly', 'so thu ly', 'so thu ly', 'sothuly'},
+    'ngay_thu_ly': {'ngaythuly', 'ngay thu ly', 'ngay thuly', 'ngaythu ly', 'ngaythu ly'},
+    'duong_su': {'tenduongsu', 'ten duong su', 'duong su', 'duong su', 'ten duong su', 'duongsu'},
+    'quan_he_phap_luat': {
+        'quanhephapluat', 'quan he phap luat', 'quan he phap luat', 'quan he phap luat',
+        'quanhetranhchap', 'quan he tranh chap', 'lyhon', 'ly hon', 'tranhchap', 'tranh chap',
+        'quanhe', 'quan he'
+    },
+    'loai_an': {'loaian', 'loai an', 'loaian', 'loai_an'},
+    'ngay_xet_xu': {'ngayxetxu', 'ngay xet xu', 'ngayxet xu', 'ngay xetxu'},
+    'qd_cnstt': {
+        'qdcnstt', 'qd cnstt', 'qd cong nhan stt', 'qd cong nhan su thoa thuan',
+        'qd cong nhan', 'qdcn', 'qd'
+    },
+    'trang_thai_giai_quyet': {
+        'trangthai', 'trang thai', 'trang thai giai quyet', 'trangthaigiaiquyet',
+        'trang thai giai quyet', 'trangthai giaiquyet'
+    },
+    'ghi_chu': {'ghichu', 'ghi chu', 'ghi chú', 'ghichu'},
+    'ma_hoa': {'mahoa', 'mã hóa', 'da ma hoa', 'da ma hoa', 'ma hoa', 'mãhoa'}
+}
+
+CANONICAL_HEADER_MAP = {}
+
+
+def normalize_header(value: str) -> str:
+    if value is None:
+        return ''
+    text = str(value).strip().lower()
+    text = unicodedata.normalize('NFD', text)
+    text = ''.join(ch for ch in text if unicodedata.category(ch) != 'Mn')
+    text = text.replace('đ', 'd')
+    for ch in [' ', '_', '-', '.', ',', '(', ')', '/', '\\', '"', "'", ':']:
+        text = text.replace(ch, '')
+    return text
+
+
+def get_canonical_header(value: str) -> str | None:
+    normalized = normalize_header(value)
+    return CANONICAL_HEADER_MAP.get(normalized)
+
+
+for canonical, aliases in HEADER_FIELD_ALIASES.items():
+    for alias in aliases:
+        CANONICAL_HEADER_MAP[normalize_header(alias)] = canonical
+
+
+def parse_excel_datetime(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    if pd is not None:
+        try:
+            parsed = pd.to_datetime(text, dayfirst=True, errors='coerce')
+            if parsed is not pd.NaT:
+                return parsed.to_pydatetime()
+        except Exception:
+            pass
+    for fmt in [
+        '%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d.%m.%Y', '%d %m %Y',
+        '%d/%m/%Y %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%d-%m-%Y %H:%M:%S'
+    ]:
+        try:
+            return datetime.strptime(text, fmt)
+        except Exception:
+            pass
+    try:
+        return datetime.fromisoformat(text)
+    except Exception:
+        return None
+
+
+def parse_bool(value):
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    return text in ['1', 'true', 'yes', 'x', 'da ma hoa', 'da ma hoa', 'checked', 'y', 'co', 'có']
+
+
+def _choose_sheet(workbook):
+    for sheet_name in workbook.sheetnames:
+        sheet = workbook[sheet_name]
+        if sheet.sheet_state == 'visible':
+            return sheet
+    return workbook.active
+
+
+def _find_header_row(worksheet, max_rows=12, min_non_empty=2, min_known_fields=2):
+    fallback = None
+    for row_index in range(1, max_rows + 1):
+        row = list(worksheet.iter_rows(min_row=row_index, max_row=row_index, values_only=True))[0]
+        normalized = [normalize_header(cell) for cell in row]
+        if sum(1 for value in normalized if value) >= min_non_empty and fallback is None:
+            fallback = (row_index, row)
+        known_fields = sum(1 for value in normalized if value in CANONICAL_HEADER_MAP)
+        if known_fields >= min_known_fields:
+            return row_index, row
+    if fallback is not None:
+        return fallback
+    first_row = list(worksheet.iter_rows(min_row=1, max_row=1, values_only=True))[0]
+    return 1, first_row
+
+
+def read_excel_rows(file_content: bytes):
+    rows = _read_excel_rows_openpyxl(file_content)
+    if rows:
+        return rows
+
+    if pd is not None:
+        try:
+            df = pd.read_excel(BytesIO(file_content), engine='openpyxl', header=0)
+            normalized_columns = [normalize_header(col) for col in df.columns]
+            df.columns = normalized_columns
+            rows = [
+                {normalize_header(str(col)): row[col] for col in df.columns}
+                for _, row in df.iterrows()
+            ]
+            if rows:
+                return rows
+        except Exception:
+            pass
+
+    return rows
+
+
+def _build_headers(header_row: list) -> list[str]:
+    normalized = [normalize_header(value) for value in header_row]
+    headers = []
+    seen = {}
+    for index, header in enumerate(normalized):
+        if not header:
+            header_name = f'col{index + 1}'
+        else:
+            header_name = get_canonical_header(header) or header
+        count = seen.get(header_name, 0)
+        seen[header_name] = count + 1
+        if count:
+            header_name = f'{header_name}_{count + 1}'
+        headers.append(header_name)
+    return headers
+
+
+def _read_excel_rows_openpyxl(file_content: bytes):
+    try:
+        workbook = load_workbook(BytesIO(file_content), data_only=True)
+        worksheet = _choose_sheet(workbook)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Không thể đọc file Excel: {exc}")
+
+    start_row, header_row = _find_header_row(worksheet)
+    headers = _build_headers(header_row)
+    if not any(headers):
+        return []
+
+    rows = []
+    blank_count = 0
+    for row in worksheet.iter_rows(min_row=start_row + 1, values_only=True):
+        if row is None or all(cell is None or str(cell).strip() == '' for cell in row):
+            blank_count += 1
+            if blank_count >= 10:
+                break
+            continue
+        blank_count = 0
+        row_data = {
+            headers[idx]: row[idx]
+            for idx in range(min(len(headers), len(row)))
+            if headers[idx]
+        }
+        if not _has_row_data(row_data):
+            continue
+        rows.append(row_data)
+    return rows
+
+
+def _is_blank_value(value):
+    if value is None:
+        return True
+    if isinstance(value, str) and not value.strip():
+        return True
+    try:
+        if pd is not None and pd.isna(value):
+            return True
+    except Exception:
+        pass
+    try:
+        return value != value
+    except Exception:
+        return False
+
+
+def _has_row_data(row_data: dict):
+    return any(not _is_blank_value(value) for value in row_data.values())
+
+
+def get_excel_value(row_data: dict, *keys):
+    for key in keys:
+        normalized = normalize_header(key)
+        if normalized in row_data:
+            return row_data[normalized]
+    return None
+
+
 @app.post("/upload-excel/")
 def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.endswith('.xlsx'):
-        raise HTTPException(status_code=400, detail="File must be .xlsx")
-    
-    wb = load_workbook(file.file)
-    ws = wb.active
-    
-    # Read header row
-    headers = []
-    for cell in ws[1]:
-        headers.append(cell.value)
-    
-    # Read data rows
-    for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=False), start=2):
-        row_data = {}
-        for col_idx, cell in enumerate(row):
-            if col_idx < len(headers):
-                row_data[headers[col_idx]] = cell.value
-        
-        stt = row_data.get('STT')
-        if stt is None:
+    if not file.filename.lower().endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="File must be .xlsx or .xls")
+
+    file_content = file.file.read()
+    rows = read_excel_rows(file_content)
+    if not rows:
+        return {"message": "File Excel không có dữ liệu", "imported": 0, "processed": 0, "skipped": 0, "errors": []}
+
+    imported = 0
+    processed = 0
+    skipped = 0
+    errors = []
+
+    for row_index, row_data in enumerate(rows, start=2):
+        if not _has_row_data(row_data):
+            skipped += 1
+            continue
+
+        processed += 1
+        stt_value = get_excel_value(row_data, 'STT', 'so thu ly', 'stt')
+        stt = None
+        try:
+            if stt_value not in (None, '', float('nan')):
+                stt = int(float(stt_value))
+        except Exception:
             stt = None
-        else:
-            stt = int(stt) if stt else None
-        
+
         case_data = CaseCreate(
             stt=stt,
-            bien_lai_an_phi=str(row_data.get('Biên lai án phí', '')),
-            so_thu_ly=str(row_data.get('Số thụ lý', '')),
-            ngay_thu_ly=row_data.get('Ngày thụ lý'),
-            ten_duong_su=str(row_data.get('Tên đương sự', '')),
-            quan_he_tranh_chap=str(row_data.get('Quan hệ tranh chấp', '')),
-            loai_an=str(row_data.get('Loại án', '')),
-            trang_thai=str(row_data.get('Trạng thái', 'Hòa giải thành'))
+            bien_lai_an_phi=str(get_excel_value(row_data, 'Biên lai án phí', 'bien lai an phi') or '').strip(),
+            so_thu_ly=str(get_excel_value(row_data, 'Số thụ lý', 'so thu ly') or '').strip(),
+            ngay_thu_ly=parse_excel_datetime(get_excel_value(row_data, 'Ngày thụ lý', 'ngay thu ly')),
+            duong_su=str(get_excel_value(row_data, 'Tên đương sự', 'ten duong su', 'duong su') or '').strip(),
+            quan_he_phap_luat=str(get_excel_value(row_data, 'Quan hệ tranh chấp', 'quan he tranh chap') or '').strip(),
+            loai_an=str(get_excel_value(row_data, 'Loại án', 'loai an') or '').strip(),
+            ngay_xet_xu=parse_excel_datetime(get_excel_value(row_data, 'Ngày xét xử', 'ngay xet xu')),
+            qd_cnstt=str(get_excel_value(row_data, 'QĐ CNSTT', 'qd_cnstt', 'qd cnstt') or '').strip(),
+            trang_thai_giai_quyet=str(get_excel_value(row_data, 'Trạng thái', 'trang thai') or 'Hòa giải thành').strip(),
+            ghi_chu=str(get_excel_value(row_data, 'Ghi chú', 'ghi chu') or '').strip(),
+            ma_hoa=parse_bool(get_excel_value(row_data, 'Mã hóa', 'ma hoa', 'ma_hoa'))
         )
-        create_case(db, case_data)
-    return {"message": "Cases imported successfully"}
+
+        try:
+            create_case(db, case_data)
+            imported += 1
+        except Exception as exc:
+            db.rollback()
+            errors.append({
+                "row": row_index,
+                "error": str(exc),
+                "data": {k: str(v) for k, v in row_data.items()}
+            })
+
+    result = {
+        "message": f"Đã nhập {imported}/{processed} dòng đã xử lý.",
+        "imported": imported,
+        "processed": processed,
+        "skipped": skipped,
+        "errors": errors,
+        "headers": list(rows[0].keys())
+    }
+    if errors:
+        result["message"] += f" {len(errors)} dòng lỗi."
+    return result
 
 @app.get("/statistics/")
 def get_stats(db: Session = Depends(get_db)):

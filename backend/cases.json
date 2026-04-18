@@ -6,10 +6,10 @@
       "bien_lai_an_phi": "0007110 20.06.2024",
       "so_thu_ly": "167 09.10.2024",
       "ngay_thu_ly": "2024-06-20T00:00:00.000Z",
-      "ten_duong_su": "Qu\u1ef9 t\u00edn d\u1ee5ng V\u0129nh Th\u1ea1nh - Cao H\u1eefu \u0110\u1ee9c",
-      "quan_he_tranh_chap": "Y\u00eau c\u1ea7u x\u00e1c \u0111\u1ecbnh t\u00e0i s\u1ea3n",
+      "duong_su": "Qu\u1ef9 t\u00edn d\u1ee5ng V\u0129nh Th\u1ea1nh - Cao H\u1eefu \u0110\u1ee9c",
+      "quan_he_phap_luat": "Y\u00eau c\u1ea7u x\u00e1c \u0111\u1ecbnh t\u00e0i s\u1ea3n",
       "loai_an": "D\u00e2n s\u1ef1",
-      "trang_thai": "T\u1ea1m \u0111\u00ecnh ch\u1ec9",
+      "trang_thai_giai_quyet": "T\u1ea1m \u0111\u00ecnh ch\u1ec9",
       "han_giai_quyet": "2024-12-17T00:00:00+00:00"
     },
     {
@@ -18,10 +18,10 @@
       "bien_lai_an_phi": "0007110 20.06.2003",
       "so_thu_ly": "167 09.10.2023",
       "ngay_thu_ly": "2025-06-20T00:00:00.000Z",
-      "ten_duong_su": "Tr\u1ea7n Ho\u00e0ng Anh",
-      "quan_he_tranh_chap": "Quy\u1ec1n s\u1eed d\u1ee5ng \u0111\u1ea5t ",
+      "duong_su": "Tr\u1ea7n Ho\u00e0ng Anh",
+      "quan_he_phap_luat": "Quy\u1ec1n s\u1eed d\u1ee5ng \u0111\u1ea5t ",
       "loai_an": "D\u00e2n s\u1ef1",
-      "trang_thai": "X\u00e9t x\u1eed",
+      "trang_thai_giai_quyet": "X\u00e9t x\u1eed",
       "han_giai_quyet": "2025-12-17T00:00:00+00:00"
     },
     {
@@ -30,10 +30,10 @@
       "bien_lai_an_phi": "0005647 14.10.2025",
       "so_thu_ly": "125 14.10.2025 ",
       "ngay_thu_ly": "2025-10-14T00:00:00.000Z",
-      "ten_duong_su": "V\u00f5 Xu\u00e2n Tr\u01b0\u1eddng - L\u00ea Huy\u1ec1n Trang",
-      "quan_he_tranh_chap": "Quy\u1ec1n s\u1eed d\u1ee5ng \u0111\u1ea5t ",
+      "duong_su": "V\u00f5 Xu\u00e2n Tr\u01b0\u1eddng - L\u00ea Huy\u1ec1n Trang",
+      "quan_he_phap_luat": "Quy\u1ec1n s\u1eed d\u1ee5ng \u0111\u1ea5t ",
       "loai_an": "D\u00e2n s\u1ef1",
-      "trang_thai": "\u0110\u00ecnh ch\u1ec9",
+      "trang_thai_giai_quyet": "\u0110\u00ecnh ch\u1ec9",
       "han_giai_quyet": "2026-04-12T00:00:00+00:00"
     }
   ],

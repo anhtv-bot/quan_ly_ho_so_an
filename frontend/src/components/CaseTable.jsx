@@ -3,32 +3,43 @@ import { useState } from 'react'
 const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
   const [editingId, setEditingId] = useState(null)
   const [editedCase, setEditedCase] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const getStatusColor = (caseItem) => {
+    const status = caseItem.trang_thai_giai_quyet?.toString() || ''
     if (
-      caseItem.trang_thai.includes('Hòa giải thành') ||
-      caseItem.trang_thai.includes('Xét xử') ||
-      caseItem.trang_thai.includes('Đình chỉ') ||
-      caseItem.trang_thai.includes('Tạm đình chỉ') ||
-      caseItem.trang_thai.includes('Bản án')
+      status.includes('Hòa giải thành') ||
+      status.includes('Đình chỉ') ||
+      status.includes('Nhập vụ án') ||
+      status.includes('Chuyển vụ án')
     ) {
       return 'bg-green-100 text-green-800'
     }
     const now = new Date()
-    const deadline = new Date(caseItem.han_giai_quyet)
-    const daysLeft = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24))
-    
-    if (daysLeft < 0) return 'bg-red-100 text-red-800'
-    if (daysLeft < 15) return 'bg-yellow-100 text-yellow-800'
+    const deadline = new Date(caseItem.han_giai_quyet || '')
+    const daysLeft = Number.isFinite(deadline.getTime()) ? Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)) : null
+    if (daysLeft !== null) {
+      if (daysLeft < 0) return 'bg-red-100 text-red-800'
+      if (daysLeft < 15) return 'bg-yellow-100 text-yellow-800'
+    }
     return 'bg-blue-100 text-blue-800'
+  }
+
+  const formatDisplayDate = (value) => {
+    if (!value) return ''
+    const parsed = new Date(value)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('vi-VN')
+    }
+    return value
   }
 
   const statusOptions = [
     'Hòa giải thành',
-    'Xét xử',
     'Đình chỉ',
-    'Tạm đình chỉ',
-    'Bản án'
+    'Nhập vụ án',
+    'Chuyển vụ án'
   ]
 
   const typeOptions = [
@@ -41,9 +52,14 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
     'Cai nghiện'
   ]
 
+  const totalPages = Math.max(1, Math.ceil(cases.length / pageSize))
+  const startIndex = (currentPage - 1) * pageSize
+  const visibleCases = cases.slice(startIndex, startIndex + pageSize)
+
   const getCaseCategory = (caseItem) => {
     const now = new Date()
     const startDate = new Date(caseItem.ngay_thu_ly)
+    if (Number.isNaN(startDate.getTime())) return 'Bình thường'
     const daysSince = Math.ceil((now - startDate) / (1000 * 60 * 60 * 24))
     
     if (caseItem.loai_an === 'Hình sự' && daysSince < 30) return 'Khẩn cấp'
@@ -52,7 +68,7 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
   }
 
   const parseDateValue = (value) => {
-    if (!value) return value
+    if (!value) return null
     const normalized = value.trim().replace(/\./g, '-').replace(/\//g, '-')
     const parts = normalized.split('-').map((part) => part.trim())
     if (parts.length === 3) {
@@ -61,27 +77,29 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
       const month = Number(monthPart)
       const year = Number(yearPart)
       if (![day, month, year].some((n) => Number.isNaN(n))) {
-        const iso = `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
-        const parsed = new Date(iso)
+        const dateOnly = `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+        const parsed = new Date(dateOnly)
         if (!Number.isNaN(parsed.getTime())) {
-          return parsed.toISOString()
+          return dateOnly
         }
       }
     }
 
     const fallback = new Date(value)
     if (!Number.isNaN(fallback.getTime())) {
-      return fallback.toISOString()
+      return fallback.toISOString().split('T')[0]
     }
 
-    return value
+    return null
   }
 
   const handleEditClick = (caseItem) => {
     setEditingId(caseItem.id)
     setEditedCase({
       ...caseItem,
-      ngay_thu_ly: new Date(caseItem.ngay_thu_ly).toLocaleDateString('vi-VN')
+      ngay_thu_ly: caseItem.ngay_thu_ly ? new Date(caseItem.ngay_thu_ly).toLocaleDateString('vi-VN') : '',
+      ngay_xet_xu: caseItem.ngay_xet_xu ? new Date(caseItem.ngay_xet_xu).toLocaleDateString('vi-VN') : '',
+      trang_thai_giai_quyet: caseItem.trang_thai_giai_quyet || 'Hòa giải thành'
     })
   }
 
@@ -95,7 +113,8 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
   const handleSave = () => {
     const payload = {
       ...editedCase,
-      ngay_thu_ly: parseDateValue(editedCase.ngay_thu_ly)
+      ngay_thu_ly: parseDateValue(editedCase.ngay_thu_ly),
+      ngay_xet_xu: parseDateValue(editedCase.ngay_xet_xu)
     }
     onCaseUpdate(editingId, payload)
     setEditingId(null)
@@ -108,7 +127,7 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
   }
 
   const handleDelete = (caseItem) => {
-    const title = caseItem.ten_duong_su || 'đương sự này'
+    const title = caseItem.duong_su || 'đương sự này'
     const confirmed = window.confirm(`Xác nhận xóa án của ${title}?`)
     if (confirmed) {
       onCaseDelete(caseItem.id)
@@ -123,33 +142,22 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
           <thead>
             <tr className="bg-gray-50">
               <th className="px-4 py-2 text-left">STT</th>
-              <th className="px-4 py-2 text-left">Biên Lai Án Phí</th>
               <th className="px-4 py-2 text-left">Số Thụ Lý</th>
               <th className="px-4 py-2 text-left">Ngày Thụ Lý</th>
-              <th className="px-4 py-2 text-left">Tên Đương Sự</th>
-              <th className="px-4 py-2 text-left">Quan Hệ Tranh Chấp</th>
-              <th className="px-4 py-2 text-left">Loại Án</th>
-              <th className="px-4 py-2 text-left">Trường Hợp</th>
-              <th className="px-4 py-2 text-left">Trạng Thái</th>
-              <th className="px-4 py-2 text-left">Hạn Giải Quyết</th>
+              <th className="px-4 py-2 text-left">Đương Sự</th>
+              <th className="px-4 py-2 text-left">Quan Hệ Pháp Luật</th>
+              <th className="px-4 py-2 text-left">Ngày Xét Xử</th>
+              <th className="px-4 py-2 text-left">QĐ CNSTT</th>
+              <th className="px-4 py-2 text-left">Trạng Thái Giải Quyết</th>
+              <th className="px-4 py-2 text-left">Ghi Chú</th>
+              <th className="px-4 py-2 text-left">Đã Mã Hóa</th>
               <th className="px-4 py-2 text-left">Hành Động</th>
             </tr>
           </thead>
           <tbody>
-            {cases.map((caseItem) => (
+            {visibleCases.map((caseItem, index) => (
               <tr key={caseItem.id} className="border-t group">
-                <td className="px-4 py-2">{caseItem.stt}</td>
-                <td className="px-4 py-2">
-                  {editingId === caseItem.id ? (
-                    <input
-                      className="w-full border rounded px-2 py-1"
-                      value={editedCase.bien_lai_an_phi}
-                      onChange={(e) => handleFieldChange('bien_lai_an_phi', e.target.value)}
-                    />
-                  ) : (
-                    caseItem.bien_lai_an_phi
-                  )}
-                </td>
+                <td className="px-4 py-2">{startIndex + index + 1}</td>
                 <td className="px-4 py-2">
                   {editingId === caseItem.id ? (
                     <input
@@ -170,66 +178,95 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
                       placeholder="DD/MM/YYYY"
                     />
                   ) : (
-                    new Date(caseItem.ngay_thu_ly).toLocaleDateString('vi-VN')
+                    formatDisplayDate(caseItem.ngay_thu_ly)
                   )}
                 </td>
                 <td className="px-4 py-2">
                   {editingId === caseItem.id ? (
                     <input
                       className="w-full border rounded px-2 py-1"
-                      value={editedCase.ten_duong_su}
-                      onChange={(e) => handleFieldChange('ten_duong_su', e.target.value)}
+                      value={editedCase.duong_su || ''}
+                      onChange={(e) => handleFieldChange('duong_su', e.target.value)}
                     />
                   ) : (
-                    caseItem.ten_duong_su
+                    caseItem.duong_su || ''
                   )}
                 </td>
                 <td className="px-4 py-2">
                   {editingId === caseItem.id ? (
                     <input
                       className="w-full border rounded px-2 py-1"
-                      value={editedCase.quan_he_tranh_chap}
-                      onChange={(e) => handleFieldChange('quan_he_tranh_chap', e.target.value)}
+                      value={editedCase.quan_he_phap_luat || ''}
+                      onChange={(e) => handleFieldChange('quan_he_phap_luat', e.target.value)}
                     />
                   ) : (
-                    caseItem.quan_he_tranh_chap
+                    caseItem.quan_he_phap_luat || ''
                   )}
                 </td>
                 <td className="px-4 py-2">
                   {editingId === caseItem.id ? (
-                    <select
+                    <input
                       className="w-full border rounded px-2 py-1"
-                      value={editedCase.loai_an}
-                      onChange={(e) => handleFieldChange('loai_an', e.target.value)}
-                    >
-                      <option value="">Chọn loại án</option>
-                      {typeOptions.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
+                      value={editedCase.ngay_xet_xu}
+                      onChange={(e) => handleFieldChange('ngay_xet_xu', e.target.value)}
+                      placeholder="DD/MM/YYYY"
+                    />
                   ) : (
-                    caseItem.loai_an
+                    formatDisplayDate(caseItem.ngay_xet_xu)
                   )}
                 </td>
-                <td className="px-4 py-2">{getCaseCategory(caseItem)}</td>
+                <td className="px-4 py-2">
+                  {editingId === caseItem.id ? (
+                    <input
+                      className="w-full border rounded px-2 py-1"
+                      value={editedCase.qd_cnstt || ''}
+                      onChange={(e) => handleFieldChange('qd_cnstt', e.target.value)}
+                    />
+                  ) : (
+                    caseItem.qd_cnstt || ''
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   {editingId === caseItem.id ? (
                     <select
                       className="w-full border rounded px-2 py-1"
-                      value={editedCase.trang_thai}
-                      onChange={(e) => handleFieldChange('trang_thai', e.target.value)}
+                      value={editedCase.trang_thai_giai_quyet}
+                      onChange={(e) => handleFieldChange('trang_thai_giai_quyet', e.target.value)}
                     >
-                      {statusOptions.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
+                      <option value="Hòa giải thành">Hòa giải thành (HGT)</option>
+                      <option value="Đình chỉ">Đình chỉ (ĐC)</option>
+                      <option value="Nhập vụ án">Nhập vụ án (NVA)</option>
+                      <option value="Chuyển vụ án">Chuyển vụ án</option>
                     </select>
                   ) : (
                     <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(caseItem)}`}>
-                      {caseItem.trang_thai}
+                      {caseItem.trang_thai_giai_quyet}
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-2">{new Date(caseItem.han_giai_quyet).toLocaleDateString('vi-VN')}</td>
+                <td className="px-4 py-2">
+                  {editingId === caseItem.id ? (
+                    <textarea
+                      className="w-full border rounded px-2 py-1"
+                      value={editedCase.ghi_chu}
+                      onChange={(e) => handleFieldChange('ghi_chu', e.target.value)}
+                      rows="2"
+                    />
+                  ) : (
+                    caseItem.ghi_chu
+                  )}
+                </td>
+                <td className="px-4 py-2">
+                  {editingId === caseItem.id ? (
+                    <input
+                      type="checkbox"
+                      checked={editedCase.ma_hoa}
+                      onChange={(e) => handleFieldChange('ma_hoa', e.target.checked)}
+                    />
+                  ) : (
+                    caseItem.ma_hoa ? '✓' : ''
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   {editingId === caseItem.id ? (
                     <div className="flex gap-2">
@@ -279,6 +316,50 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="text-sm text-gray-600">
+          Hiển thị {visibleCases.length} trên {cases.length} án
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <span>Số dòng mỗi trang:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value))
+                setCurrentPage(1)
+              }}
+              className="border border-gray-300 rounded-md p-1"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded border border-gray-300 bg-white disabled:opacity-50"
+            >
+              Trước
+            </button>
+            <span>
+              Trang {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded border border-gray-300 bg-white disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import axios from 'axios'
 
-const API_BASE = ''
+const API_BASE = 'http://localhost:8001'
 
 const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
   const [formData, setFormData] = useState({
     bien_lai_an_phi: '',
     so_thu_ly: '',
     ngay_thu_ly: '',
-    ten_duong_su: '',
-    quan_he_tranh_chap: '',
-    loai_an: '',
-    trang_thai: 'Hòa giải thành'
+    duong_su: '',
+    quan_he_phap_luat: '',
+    ngay_xet_xu: '',
+    qd_cnstt: '',
+    trang_thai_giai_quyet: 'Hòa giải thành',
+    ghi_chu: '',
+    ma_hoa: false
   })
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -26,44 +29,33 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
     if (!value) return null
     const normalized = value.trim().replace(/\./g, '-').replace(/\//g, '-')
     const parts = normalized.split('-').map((part) => part.trim())
-    if (parts.length !== 3) {
-      return null
+    if (parts.length === 3) {
+      const [dayPart, monthPart, yearPart] = parts
+      const day = Number(dayPart)
+      const month = Number(monthPart)
+      const year = Number(yearPart)
+      if (![day, month, year].some((n) => Number.isNaN(n))) {
+        const candidateDate = `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+        const parsed = new Date(candidateDate)
+        if (!Number.isNaN(parsed.getTime()) && parsed.getDate() === day && parsed.getMonth() + 1 === month && parsed.getFullYear() === year) {
+          return candidateDate
+        }
+      }
     }
 
-    const [dayPart, monthPart, yearPart] = parts
-    const day = Number(dayPart)
-    const month = Number(monthPart)
-    const year = Number(yearPart)
-    if ([day, month, year].some((n) => Number.isNaN(n))) {
-      return null
-    }
-
-    const candidateIso = `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
-    const parsed = new Date(candidateIso)
-    if (!Number.isNaN(parsed.getTime()) && parsed.getDate() === day && parsed.getMonth() + 1 === month && parsed.getFullYear() === year) {
-      return parsed.toISOString()
-    }
-
-    // allow ISO input directly as fallback
     const isoTry = new Date(value)
     if (!Number.isNaN(isoTry.getTime())) {
-      return isoTry.toISOString()
+      return isoTry.toISOString().split('T')[0]
     }
 
-    return null
-
-    return null
+    return value
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMessage('')
 
-    const isoDate = parseDateValue(formData.ngay_thu_ly)
-    if (!isoDate) {
-      setErrorMessage('Ngày Thụ Lý không hợp lệ. Vui lòng nhập theo định dạng DD/MM/YYYY hoặc DD-MM-YYYY.')
-      return
-    }
+    const isoDate = formData.ngay_thu_ly ? parseDateValue(formData.ngay_thu_ly) : ''
 
     try {
       await axios.post(`${API_BASE}/cases/`, {
@@ -74,10 +66,13 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
         bien_lai_an_phi: '',
         so_thu_ly: '',
         ngay_thu_ly: '',
-        ten_duong_su: '',
-        quan_he_tranh_chap: '',
-        loai_an: '',
-        trang_thai: 'Hòa giải thành'
+        duong_su: '',
+        quan_he_phap_luat: '',
+        ngay_xet_xu: '',
+        qd_cnstt: '',
+        trang_thai_giai_quyet: 'Hòa giải thành',
+        ghi_chu: '',
+        ma_hoa: false
       })
       onCaseAdded()
     } catch (error) {
@@ -101,7 +96,6 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             name="bien_lai_an_phi"
             value={formData.bien_lai_an_phi}
             onChange={handleChange}
-            required
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
           />
         </div>
@@ -112,7 +106,6 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             name="so_thu_ly"
             value={formData.so_thu_ly}
             onChange={handleChange}
-            required
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
           />
         </div>
@@ -124,65 +117,86 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             placeholder="DD/MM/YYYY"
             value={formData.ngay_thu_ly}
             onChange={handleChange}
-            required
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Tên Đương Sự</label>
+          <label className="block text-sm font-medium text-gray-700">Đương Sự</label>
           <input
             type="text"
-            name="ten_duong_su"
-            value={formData.ten_duong_su}
+            name="duong_su"
+            value={formData.duong_su}
             onChange={handleChange}
-            required
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Quan Hệ Tranh Chấp</label>
+          <label className="block text-sm font-medium text-gray-700">Quan Hệ Pháp Luật</label>
           <input
             type="text"
-            name="quan_he_tranh_chap"
-            value={formData.quan_he_tranh_chap}
+            name="quan_he_phap_luat"
+            placeholder="Ví dụ: Xin ly hôn"
+            value={formData.quan_he_phap_luat}
             onChange={handleChange}
-            required
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Loại Án</label>
-          <select
-            name="loai_an"
-            value={formData.loai_an}
+          <label className="block text-sm font-medium text-gray-700">Ngày Xét Xử</label>
+          <input
+            type="text"
+            name="ngay_xet_xu"
+            placeholder="DD/MM/YYYY (tùy chọn)"
+            value={formData.ngay_xet_xu}
             onChange={handleChange}
-            required
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-          >
-            <option value="">Chọn loại án</option>
-            <option value="Dân sự">Dân sự</option>
-            <option value="Hôn nhân">Hôn nhân</option>
-            <option value="KDTM">KDTM</option>
-            <option value="Lao động">Lao động</option>
-            <option value="Hình sự">Hình sự</option>
-            <option value="Cai nghiện">Cai nghiện</option>
-          </select>
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Trạng Thái</label>
-          <select
-            name="trang_thai"
-            value={formData.trang_thai}
+          <label className="block text-sm font-medium text-gray-700">QĐ Công Nhận Sự Thỏa Thuận</label>
+          <input
+            type="text"
+            name="qd_cnstt"
+            value={formData.qd_cnstt}
             onChange={handleChange}
-            required
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Trạng Thái Giải Quyết</label>
+          <select
+            name="trang_thai_giai_quyet"
+            value={formData.trang_thai_giai_quyet}
+            onChange={handleChange}
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
           >
-            <option value="Hòa giải thành">Hòa giải thành</option>
-            <option value="Xét xử">Xét xử</option>
-            <option value="Đình chỉ">Đình chỉ</option>
-            <option value="Tạm đình chỉ">Tạm đình chỉ</option>
-            <option value="Bản án">Bản án</option>
+            <option value="Hòa giải thành">Hòa giải thành (HGT)</option>
+            <option value="Đình chỉ">Đình chỉ (ĐC)</option>
+            <option value="Nhập vụ án">Nhập vụ án (NVA)</option>
+            <option value="Chuyển vụ án">Chuyển vụ án</option>
           </select>
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700">Ghi Chú</label>
+          <textarea
+            name="ghi_chu"
+            value={formData.ghi_chu}
+            onChange={handleChange}
+            rows="3"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          />
+        </div>
+        <div>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              name="ma_hoa"
+              checked={formData.ma_hoa}
+              onChange={(e) => setFormData({ ...formData, ma_hoa: e.target.checked })}
+              className="mr-2"
+            />
+            <span className="text-sm font-medium text-gray-700">Đã Mã Hóa</span>
+          </label>
         </div>
         {errorMessage && (
           <div className="md:col-span-2 text-sm text-red-600">{errorMessage}</div>
