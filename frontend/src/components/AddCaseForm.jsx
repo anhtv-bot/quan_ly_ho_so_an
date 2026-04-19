@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:8001'
+const API_BASE = 'http://localhost:8000'
 
 const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
   const [formData, setFormData] = useState({

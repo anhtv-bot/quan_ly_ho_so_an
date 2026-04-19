@@ -1,0 +1,224 @@
+﻿Danh sách 20 hồ sơ án mẫu
+STT
+	Số thụ lý
+	Ngày thụ lý
+	Đương sự
+	Quan hệ pháp luật
+	Ngày xét xử
+	QĐ CNSTT
+	Trạng thái giải quyết
+	Ghi chú
+	1
+	01/2026/TLST-DS
+	05/01/2026
+	Nguyễn Văn A - Trần Thị B
+	Tranh chấp đất đai
+	15/03/2026
+	
+
+	Đang giải quyết
+	Tài liệu đầy đủ
+	2
+	02/2026/TLST-HNGĐ
+	10/01/2026
+	Lê Văn C - Phạm Thị D
+	Ly hôn
+	20/02/2026
+	QĐ số 12
+	Hòa giải thành (HGT)
+	Đã nộp án phí
+	3
+	03/2026/TLST-KDTM
+	15/01/2026
+	Công ty X - Ngân hàng Y
+	Tranh chấp hợp đồng tín dụng
+	
+
+	
+
+	Tạm đình chỉ
+	Chờ bổ sung chứng cứ
+	4
+	04/2026/TLST-DS
+	20/01/2026
+	Hoàng Văn E - Đặng Thị F
+	Tranh chấp thừa kế
+	10/04/2026
+	
+
+	Đang giải quyết
+	
+
+	5
+	05/2026/TLST-DS
+	25/01/2026
+	Trần Văn G - Vũ Thị H
+	Tranh chấp hợp đồng vay tài sản
+	05/03/2026
+	QĐ số 15
+	Hòa giải thành (HGT)
+	
+
+	6
+	06/2026/TLST-HNGĐ
+	02/02/2026
+	Bùi Văn I - Đỗ Thị K
+	Tranh chấp quyền nuôi con
+	
+
+	
+
+	Đang giải quyết
+	
+
+	7
+	07/2026/TLST-DS
+	10/02/2026
+	Ngô Văn L - Lý Thị M
+	Tranh chấp bồi thường thiệt hại
+	25/04/2026
+	
+
+	Đang giải quyết
+	
+
+	8
+	08/2026/TLST-KDTM
+	15/02/2026
+	Công ty A - Công ty B
+	Tranh chấp hợp đồng mua bán
+	12/03/2026
+	QĐ số 20
+	Hòa giải thành (HGT)
+	
+
+	9
+	09/2026/TLST-DS
+	20/02/2026
+	Phan Văn N - Trịnh Thị O
+	Tranh chấp ranh giới đất
+	
+
+	
+
+	Tạm đình chỉ
+	Chờ giám định
+	10
+	10/2026/TLST-HNGĐ
+	25/02/2026
+	Đinh Văn P - Hà Thị Q
+	Ly hôn, chia tài sản
+	15/05/2026
+	
+
+	Đang giải quyết
+	
+
+	11
+	11/2026/TLST-DS
+	01/03/2026
+	Trương Văn R - Võ Thị S
+	Tranh chấp đòi tài sản
+	20/04/2026
+	
+
+	Đang giải quyết
+	
+
+	12
+	12/2026/TLST-DS
+	05/03/2026
+	Lâm Văn T - Diệp Thị U
+	Tranh chấp lối đi chung
+	
+
+	
+
+	Đang giải quyết
+	
+
+	13
+	13/2026/TLST-KDTM
+	10/03/2026
+	Hợp tác xã X - Công ty Y
+	Tranh chấp hợp đồng dịch vụ
+	30/03/2026
+	QĐ số 25
+	Hòa giải thành (HGT)
+	
+
+	14
+	14/2026/TLST-DS
+	15/03/2026
+	Lương Văn V - Quách Thị W
+	Tranh chấp hợp đồng đặt cọc
+	10/06/2026
+	
+
+	Đang giải quyết
+	
+
+	15
+	15/2026/TLST-HNGĐ
+	20/03/2026
+	Tô Văn X - Vương Thị Y
+	Thay đổi người nuôi con
+	
+
+	
+
+	Tạm đình chỉ
+	
+
+	16
+	16/2026/TLST-DS
+	25/03/2026
+	Cao Văn Z - Đào Thị A
+	Tranh chấp quyền sử dụng đất
+	15/07/2026
+	
+
+	Đang giải quyết
+	
+
+	17
+	17/2026/TLST-DS
+	01/04/2026
+	Mai Văn B - Chu Thị C
+	Tranh chấp hợp đồng thuê nhà
+	20/05/2026
+	QĐ số 30
+	Hòa giải thành (HGT)
+	
+
+	18
+	18/2026/TLST-KDTM
+	05/04/2026
+	Ngân hàng Z - Ông Nguyễn Văn D
+	Tranh chấp hợp đồng tín dụng
+	
+
+	
+
+	Đang giải quyết
+	
+
+	19
+	19/2026/TLST-DS
+	10/04/2026
+	Tạ Văn E - Nghiêm Thị F
+	Tranh chấp di sản thừa kế
+	25/08/2026
+	
+
+	Đang giải quyết
+	
+
+	20
+	20/2026/TLST-HNGĐ
+	15/04/2026
+	Phùng Văn G - Kim Thị H
+	Ly hôn thuận tình
+	20/04/2026
+	QĐ số 35
+	Hòa giải thành (HGT)

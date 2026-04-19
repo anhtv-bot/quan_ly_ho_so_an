@@ -1,0 +1,80 @@
+{
+  "columns": [
+    "Biên Lai Án Phí",
+    "Số Thụ Lý",
+    "Ngày Thụ Lý",
+    "Đương Sự",
+    "Quan Hệ Pháp Luật",
+    "Ngày Xét Xử",
+    "QĐ Công Nhận STT",
+    "Trạng Thái Giải Quyết",
+    "Ghi Chú",
+    "Đã Mã Hóa"
+  ],
+  "shape": [
+    5,
+    10
+  ],
+  "rows": [
+    {
+      "Biên Lai Án Phí": "BL-2024-001",
+      "Số Thụ Lý": "01/2024/TLST-HNGĐ",
+      "Ngày Thụ Lý": "02/01/2024",
+      "Đương Sự": "Nguyễn Văn Hùng - Lê Thị Mai",
+      "Quan Hệ Pháp Luật": "Ly hôn, tranh chấp nuôi con",
+      "Ngày Xét Xử": "15/03/2024",
+      "QĐ Công Nhận STT": "QĐ số 05/2024",
+      "Trạng Thái Giải Quyết": "Hòa giải thành",
+      "Ghi Chú": "Đã tống đạt quyết định",
+      "Đã Mã Hóa": "Không"
+    },
+    {
+      "Biên Lai Án Phí": "BL-2024-002",
+      "Số Thụ Lý": "22/2024/TLST-DS",
+      "Ngày Thụ Lý": "15/01/2024",
+      "Đương Sự": "Trần Đình Trọng - Vũ Thu Hà",
+      "Quan Hệ Pháp Luật": "Tranh chấp quyền sử dụng đất",
+      "Ngày Xét Xử": null,
+      "QĐ Công Nhận STT": null,
+      "Trạng Thái Giải Quyết": "Đình chỉ",
+      "Ghi Chú": "Nguyên đơn rút đơn kiện",
+      "Đã Mã Hóa": "Có"
+    },
+    {
+      "Biên Lai Án Phí": "BL-2024-003",
+      "Số Thụ Lý": "45/2024/TLST-DS",
+      "Ngày Thụ Lý": "05/02/2024",
+      "Đương Sự": "Phạm Thành Nam - Nguyễn Thị Lan",
+      "Quan Hệ Pháp Luật": "Tranh chấp thừa kế tài sản",
+      "Ngày Xét Xử": "20/04/2024",
+      "QĐ Công Nhận STT": "QĐ số 12/2024",
+      "Trạng Thái Giải Quyết": "Hòa giải thành",
+      "Ghi Chú": "Các bên tự thỏa thuận được",
+      "Đã Mã Hóa": "Không"
+    },
+    {
+      "Biên Lai Án Phí": "BL-2024-004",
+      "Số Thụ Lý": "12/2024/TLST-KDTM",
+      "Ngày Thụ Lý": "10/03/2024",
+      "Đương Sự": "Công ty Kim Khí - Ngân hàng Á Châu",
+      "Quan Hệ Pháp Luật": "Tranh chấp hợp đồng vay tài sản",
+      "Ngày Xét Xử": null,
+      "QĐ Công Nhận STT": null,
+      "Trạng Thái Giải Quyết": "Nhập vụ án",
+      "Ghi Chú": "Nhập vào vụ án số 08",
+      "Đã Mã Hóa": "Không"
+    },
+    {
+      "Biên Lai Án Phí": "BL-2024-005",
+      "Số Thụ Lý": "66/2024/TLST-HNGĐ",
+      "Ngày Thụ Lý": "22/03/2024",
+      "Đương Sự": "Lý Văn Tùng - Đặng Hồng Ngọc",
+      "Quan Hệ Pháp Luật": "Thay đổi người trực tiếp nuôi con",
+      "Ngày Xét Xử": null,
+      "QĐ Công Nhận STT": null,
+      "Trạng Thái Giải Quyết": "Chuyển vụ án",
+      "Ghi Chú": "Chuyển hồ sơ sang Tòa án tỉnh",
+      "Đã Mã Hóa": "Có"
+    }
+  ]
+}

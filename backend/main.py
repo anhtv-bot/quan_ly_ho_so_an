@@ -7,22 +7,43 @@ from .crud import get_cases, get_case_by_id, create_case, update_case, delete_ca
 from .schemas import Case as CaseSchema, CaseCreate, CaseUpdate
 from datetime import datetime
 from io import BytesIO
+import csv
+import logging
+import os
+import tempfile
 import unicodedata
 from openpyxl import load_workbook
+
+try:
+    from docx import Document as DocxDocument
+except ImportError:
+    DocxDocument = None
+
+try:
+    from PyPDF2 import PdfReader
+except ImportError:
+    PdfReader = None
 
 try:
     import pandas as pd
 except ImportError:
     pd = None
-import os
+
+try:
+    import textract
+except ImportError:
+    textract = None
 
 initialize_database()
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('backend.upload')
 
 app = FastAPI(title="Quản lý Hồ Sơ Án API")
 
 static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend/dist"))
-if os.path.isdir(static_dir):
-    app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
 
 origins = [
     "http://localhost:3000",
@@ -40,6 +61,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+SUPPORTED_DOCUMENT_EXTENSIONS = ('.xlsx', '.xls', '.docx', '.doc', '.pdf', '.txt', '.csv')
 
 def get_db():
     db = SessionLocal()
@@ -169,6 +192,11 @@ def parse_bool(value):
     return text in ['1', 'true', 'yes', 'x', 'da ma hoa', 'da ma hoa', 'checked', 'y', 'co', 'có']
 
 
+def _normalize_pandas_columns(columns):
+    normalized = [normalize_header(col) for col in columns]
+    return [get_canonical_header(col) or col for col in normalized]
+
+
 def _choose_sheet(workbook):
     for sheet_name in workbook.sheetnames:
         sheet = workbook[sheet_name]
@@ -196,23 +224,119 @@ def _find_header_row(worksheet, max_rows=12, min_non_empty=2, min_known_fields=2
 def read_excel_rows(file_content: bytes):
     rows = _read_excel_rows_openpyxl(file_content)
     if rows:
+        logger.info(f"[read_excel_rows] openpyxl read {len(rows)} rows")
         return rows
 
     if pd is not None:
         try:
             df = pd.read_excel(BytesIO(file_content), engine='openpyxl', header=0)
-            normalized_columns = [normalize_header(col) for col in df.columns]
-            df.columns = normalized_columns
+            df.columns = _normalize_pandas_columns(df.columns)
             rows = [
-                {normalize_header(str(col)): row[col] for col in df.columns}
+                {col: row[col] for col in df.columns}
                 for _, row in df.iterrows()
             ]
+            logger.info(f"[read_excel_rows] pandas read {len(df)} rows, columns={list(df.columns)}")
             if rows:
                 return rows
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.error(f"[read_excel_rows] pandas read failed: {exc}")
 
     return rows
+
+
+def read_word_document(file_content: bytes, filename: str) -> str:
+    """Đọc nội dung từ file Word (.docx, .doc)"""
+    extension = os.path.splitext(filename)[1].lower()
+    if extension == '.docx':
+        if DocxDocument is None:
+            raise HTTPException(status_code=400, detail="python-docx chưa được cài đặt")
+        try:
+            doc = DocxDocument(BytesIO(file_content))
+            paragraphs = []
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    paragraphs.append(para.text)
+            for table in doc.tables:
+                for row in table.rows:
+                    row_data = [cell.text.strip() for cell in row.cells]
+                    if any(row_data):
+                        paragraphs.append(' | '.join(row_data))
+            full_text = '\n'.join(paragraphs)
+            logger.info(f"[read_word_document] read {len(paragraphs)} paragraphs/rows from DOCX")
+            return full_text
+        except Exception as exc:
+            logger.error(f"[read_word_document] DOCX failed: {exc}")
+            raise HTTPException(status_code=400, detail=f"Không thể đọc file Word (.docx): {exc}")
+
+    if extension == '.doc':
+        if textract is None:
+            raise HTTPException(
+                status_code=400,
+                detail="File .doc chưa được hỗ trợ nếu không có textract. Hãy chuyển đổi sang .docx hoặc cài textract và các công cụ chuyển đổi tương ứng."
+            )
+        temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.doc') as temp_file:
+                temp_file.write(file_content)
+                temp_path = temp_file.name
+            text = textract.process(temp_path)
+            if isinstance(text, bytes):
+                text = text.decode('utf-8', errors='ignore')
+            content = text.strip()
+            logger.info(f"[read_word_document] read {len(content.splitlines())} lines from DOC")
+            return content
+        except Exception as exc:
+            logger.error(f"[read_word_document] DOC failed: {exc}")
+            raise HTTPException(status_code=400, detail=f"Không thể đọc file Word (.doc): {exc}")
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.unlink(temp_path)
+                except Exception:
+                    pass
+
+    raise HTTPException(status_code=400, detail="Định dạng Word không được hỗ trợ")
+
+
+def read_txt_document(file_content: bytes) -> str:
+    try:
+        text = file_content.decode('utf-8')
+    except UnicodeDecodeError:
+        text = file_content.decode('latin-1', errors='ignore')
+    return text.strip()
+
+
+def read_csv_document(file_content: bytes) -> str:
+    try:
+        text = file_content.decode('utf-8')
+    except UnicodeDecodeError:
+        text = file_content.decode('latin-1', errors='ignore')
+    rows = []
+    for row in csv.reader(text.splitlines()):
+        rows.append(' | '.join(row))
+    return '\n'.join(rows)
+
+
+def read_pdf_document(file_content: bytes) -> str:
+    """Đọc nội dung từ file PDF"""
+    if PdfReader is None:
+        raise HTTPException(status_code=400, detail="PyPDF2 chưa được cài đặt")
+    
+    try:
+        pdf = PdfReader(BytesIO(file_content))
+        pages = []
+        
+        for page_num, page in enumerate(pdf.pages):
+            text = page.extract_text()
+            if text and text.strip():
+                pages.append(text)
+        
+        full_text = '\n---PAGE BREAK---\n'.join(pages)
+        logger.info(f"[read_pdf_document] read {len(pdf.pages)} pages")
+        return full_text
+    except Exception as exc:
+        logger.error(f"[read_pdf_document] failed: {exc}")
+        raise HTTPException(status_code=400, detail=f"Không thể đọc file PDF: {exc}")
 
 
 def _build_headers(header_row: list) -> list[str]:
@@ -287,8 +411,11 @@ def _has_row_data(row_data: dict):
 def get_excel_value(row_data: dict, *keys):
     for key in keys:
         normalized = normalize_header(key)
-        if normalized in row_data:
-            return row_data[normalized]
+        canonical = get_canonical_header(normalized)
+        if canonical and canonical in row_data:
+            return row_data[canonical]
+        if key in row_data:
+            return row_data[key]
     return None
 
 
@@ -298,9 +425,20 @@ def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="File must be .xlsx or .xls")
 
     file_content = file.file.read()
+    upload_name = f"{datetime.now():%Y%m%d%H%M%S}_{os.path.basename(file.filename)}"
+    upload_path = os.path.join(UPLOAD_DIR, upload_name)
+    try:
+        with open(upload_path, 'wb') as upload_file:
+            upload_file.write(file_content)
+        logger.info(f"[upload_excel] saved uploaded file to {upload_path} ({len(file_content)} bytes)")
+    except Exception as exc:
+        logger.error(f"[upload_excel] failed to save uploaded file: {exc}")
+        raise HTTPException(status_code=500, detail=f"Không thể lưu file upload: {exc}")
+
     rows = read_excel_rows(file_content)
     if not rows:
-        return {"message": "File Excel không có dữ liệu", "imported": 0, "processed": 0, "skipped": 0, "errors": []}
+        logger.info(f"[upload_excel] no rows found in uploaded file: {upload_path}")
+        return {"message": "File Excel không có dữ liệu", "imported": 0, "processed": 0, "skipped": 0, "errors": [], "file_path": upload_path}
 
     imported = 0
     processed = 0
@@ -341,27 +479,108 @@ def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
             imported += 1
         except Exception as exc:
             db.rollback()
+            logger.error(f"[upload_excel] create case failed row {row_index}: {exc}")
             errors.append({
                 "row": row_index,
                 "error": str(exc),
                 "data": {k: str(v) for k, v in row_data.items()}
             })
 
+    logger.info(f"[upload_excel] commit summary uploaded file {upload_path}: processed={processed}, imported={imported}, skipped={skipped}, errors={len(errors)}")
     result = {
         "message": f"Đã nhập {imported}/{processed} dòng đã xử lý.",
         "imported": imported,
         "processed": processed,
         "skipped": skipped,
         "errors": errors,
-        "headers": list(rows[0].keys())
+        "headers": list(rows[0].keys()),
+        "file_path": upload_path
     }
     if errors:
         result["message"] += f" {len(errors)} dòng lỗi."
     return result
 
+
+@app.post("/upload-document/")
+def upload_document(file: UploadFile = File(...)):
+    """
+    Đọc nội dung từ các loại file khác nhau (Excel, Word, PDF)
+    """
+    filename_lower = file.filename.lower()
+    file_content = file.file.read()
+    
+    upload_name = f"{datetime.now():%Y%m%d%H%M%S}_{os.path.basename(file.filename)}"
+    upload_path = os.path.join(UPLOAD_DIR, upload_name)
+    
+    try:
+        with open(upload_path, 'wb') as upload_file:
+            upload_file.write(file_content)
+        logger.info(f"[upload_document] saved file to {upload_path} ({len(file_content)} bytes)")
+    except Exception as exc:
+        logger.error(f"[upload_document] failed to save file: {exc}")
+        raise HTTPException(status_code=500, detail=f"Không thể lưu file: {exc}")
+    
+    content = ""
+    file_type = "unknown"
+    
+    # Xác định loại file và đọc nội dung tương ứng
+    if filename_lower.endswith(('.xlsx', '.xls')):
+        file_type = "excel"
+        try:
+            rows = read_excel_rows(file_content)
+            if rows:
+                headers = list(rows[0].keys())
+                content_lines = [' | '.join(str(h) for h in headers)]
+                for row in rows:
+                    row_values = [str(row.get(h, '')) for h in headers]
+                    content_lines.append(' | '.join(row_values))
+                content = '\n'.join(content_lines)
+                logger.info(f"[upload_document] read {len(rows)} rows from Excel")
+            else:
+                content = "File Excel không có dữ liệu"
+        except Exception as exc:
+            logger.error(f"[upload_document] excel read failed: {exc}")
+            raise HTTPException(status_code=400, detail=f"Không thể đọc file Excel: {exc}")
+    
+    elif filename_lower.endswith(('.docx', '.doc')):
+        file_type = "word"
+        content = read_word_document(file_content, file.filename)
+
+    elif filename_lower.endswith('.txt'):
+        file_type = "text"
+        content = read_txt_document(file_content)
+
+    elif filename_lower.endswith('.csv'):
+        file_type = "csv"
+        content = read_csv_document(file_content)
+
+    elif filename_lower.endswith('.pdf'):
+        file_type = "pdf"
+        content = read_pdf_document(file_content)
+    
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Loại file không được hỗ trợ. Hỗ trợ: {', '.join(SUPPORTED_DOCUMENT_EXTENSIONS)}"
+        )
+    
+    return {
+        "message": f"Đã đọc file {file_type.upper()} thành công",
+        "file_type": file_type,
+        "file_name": file.filename,
+        "file_path": upload_path,
+        "file_size": len(file_content),
+        "content": content[:1000] if len(content) > 1000 else content,
+        "content_length": len(content),
+        "preview": content[:500] + "..." if len(content) > 500 else content
+    }
+
 @app.get("/statistics/")
 def get_stats(db: Session = Depends(get_db)):
     return get_statistics(db)
+
+if os.path.isdir(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="frontend")
 
 
 if __name__ == '__main__':

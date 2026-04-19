@@ -1,0 +1,13 @@
+Header: QĐ Công Nhận STT
+Normalized: qdcongnhanstt
+
+Aliases for qd_cnstt:
+  'qd cnstt' -> 'qdcnstt'
+  'qd cong nhan' -> 'qdcongnhan'
+  'qd cong nhan stt' -> 'qdcongnhanstt'
+  'qdcn' -> 'qdcn'
+  'qd' -> 'qd'
+  'qdcnstt' -> 'qdcnstt'
+  'qd cong nhan su thoa thuan' -> 'qdcongnhansuthoathuan'
+
+Does 'qdcongnhanstt' match? True

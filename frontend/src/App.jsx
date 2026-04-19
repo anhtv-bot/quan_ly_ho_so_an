@@ -6,7 +6,7 @@ import AddCaseForm from './components/AddCaseForm'
 import UploadFile from './components/UploadFile'
 import Login from './components/Login'
 
-const API_BASE = 'http://localhost:8001'
+const API_BASE = 'http://localhost:8000'
 
 function App() {
   const [cases, setCases] = useState([])
