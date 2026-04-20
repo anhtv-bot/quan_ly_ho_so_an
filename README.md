@@ -1,44 +1,103 @@
 ﻿# Quản Lý Hồ Sơ Án
 
-Triển khai nhanh ứng dụng backend FastAPI và frontend React/Vite bằng Docker.
+Triển khai ứng dụng với 2 image riêng:
 
-## Triển khai
+- `quanlyhosoan-be:latest` cho backend FastAPI
+- `quanlyhosoan-fe:latest` cho frontend React/Vite chạy qua Nginx
 
-1. Sao chép file cấu hình mẫu:
+Mô hình chạy trên server đã được tách làm 2 bước:
+
+- `docker-compose.build.yml` chỉ dùng để build image
+- `docker-compose.yml` chỉ dùng để chạy `up/down` từ image đã có
+
+## Cấu hình
+
+1. Sao chép file mẫu:
 ```bash
-copy .env.example .env
+cp .env.example .env
 ```
-2. Mở `.env` và điền giá trị:
+
+2. Cập nhật `.env` nếu cần:
 ```env
-SUBDOMAIN=your-subdomain
 PORT=8001
+FRONTEND_PORT=3000
+BE_IMAGE=quanlyhosoan-be:latest
+FE_IMAGE=quanlyhosoan-fe:latest
+VITE_API_BASE=http://localhost:8001
 ```
-3. Khởi động ứng dụng:
+
+Lưu ý:
+
+- `PORT` là cổng backend ngoài máy host.
+- `FRONTEND_PORT` là cổng frontend ngoài máy host.
+- `BE_IMAGE` và `FE_IMAGE` là tên image được build và dùng khi chạy container.
+- Nếu đổi `PORT`, hãy đổi luôn `VITE_API_BASE` cho đúng API URL mà frontend sẽ gọi khi build.
+
+## Build Image Trên Server
+
+Build riêng image:
+
+```bash
+docker compose -f docker-compose.build.yml build
+```
+
+Sau khi build xong sẽ có:
+
+- `quanlyhosoan-be:latest`
+- `quanlyhosoan-fe:latest`
+
+## Chạy Ứng Dụng
+
+Chạy container từ image đã build:
+
 ```bash
 docker compose up -d
 ```
-4. Kiểm tra trạng thái:
+
+Kiểm tra trạng thái:
+
 ```bash
 docker compose ps
 ```
 
-## Ghi chú
+Xem log:
 
-- Dữ liệu SQLite được lưu vào volume `db_data` và không bị mất khi restart.
-- Ứng dụng backend lắng nghe tại cổng `8001`.
-- Frontend đã được build sẵn và phục vụ bởi backend.
+```bash
+docker compose logs -f be
+docker compose logs -f fe
+```
 
-## File mới
+## Quy Trình Deploy Gợi Ý
 
-- `Dockerfile` - Multi-stage build frontend + backend.
-- `docker-compose.yml` - service app + persistent volume.
-- `.env.example` - mẫu thông số SUBDOMAIN và PORT.
+Khi có thay đổi code:
 
-## Mở rộng
-
-Nếu cần sửa `PORT`, chỉ cần cập nhật `.env` và chạy lại:
 ```bash
 docker compose down
-
+docker compose -f docker-compose.build.yml build
 docker compose up -d
 ```
+
+Nếu chỉ restart container mà không build lại:
+
+```bash
+docker compose up -d
+```
+
+## Truy cập
+
+- Frontend: `http://localhost:3000` hoặc `http://localhost:${FRONTEND_PORT}`
+- Backend API: `http://localhost:8001`
+- Swagger docs: `http://localhost:8001/docs`
+
+## Dừng Ứng Dụng
+
+```bash
+docker compose down
+```
+
+## Ghi chú
+
+- Dữ liệu SQLite được lưu trong volume `db_data` tại `/app/data`.
+- File upload được mount ra máy host tại `./backend/uploads` và map vào `/app/backend/uploads` trong container.
+- Frontend và backend chạy ở 2 container riêng.
+- `docker-compose.yml` không còn chứa phần `build`, nên phù hợp để chạy trên server sau khi image đã được build sẵn.

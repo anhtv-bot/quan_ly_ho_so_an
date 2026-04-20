@@ -1,0 +1,14 @@
+services:
+  be:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${BE_IMAGE:-quanlyhosoan-be:latest}
+
+  fe:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8001}
+    image: ${FE_IMAGE:-quanlyhosoan-fe:latest}

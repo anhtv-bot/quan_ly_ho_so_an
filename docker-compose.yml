@@ -1,21 +1,23 @@
-version: '3.9'
-
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: quanlyhosoan_app
+  be:
+    image: ${BE_IMAGE:-quanlyhosoan-be:latest}
+    container_name: quanlyhosoan_be
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
       - PORT=${PORT:-8001}
-      - SUBDOMAIN=${SUBDOMAIN:-your-subdomain}
     ports:
       - "${PORT:-8001}:8001"
     volumes:
-      - db_data:/app/data
+      - ./db_data:/app/data
+      - ./uploads:/app/backend/uploads
+  fe:
+    image: ${FE_IMAGE:-quanlyhosoan-fe:latest}
+    container_name: quanlyhosoan_fe
+    restart: unless-stopped
+    depends_on:
+      - be
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
 
 volumes:
   db_data:

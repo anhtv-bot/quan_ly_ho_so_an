@@ -114,3 +114,5 @@ install_nssm_services.bat
 
 # Keep examples
 !.env.example
+uploads/
+db_data/
