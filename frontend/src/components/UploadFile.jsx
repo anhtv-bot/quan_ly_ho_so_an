@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import axios from 'axios'
-
-const API_BASE = 'http://localhost:8000'
+import API_BASE from '../apiConfig'
 
 const UploadFile = ({ onUploadSuccess, backendAvailable = true }) => {
   const [file, setFile] = useState(null)
@@ -105,9 +104,9 @@ const UploadFile = ({ onUploadSuccess, backendAvailable = true }) => {
                   </div>
                 </div>
               )}
-              {resultDetails.imported && <div>Đã nhập: {resultDetails.imported} hồ sơ</div>}
-              {resultDetails.processed && <div>Đã xử lý: {resultDetails.processed} dòng</div>}
-              {resultDetails.skipped && <div>Bỏ qua: {resultDetails.skipped} dòng</div>}
+              {typeof resultDetails.imported !== 'undefined' && <div>Đã nhập: {resultDetails.imported} hồ sơ</div>}
+              {typeof resultDetails.processed !== 'undefined' && <div>Đã xử lý: {resultDetails.processed} dòng</div>}
+              {typeof resultDetails.skipped !== 'undefined' && <div>Bỏ qua: {resultDetails.skipped} dòng</div>}
               {resultDetails.errors && resultDetails.errors.length > 0 && (
                 <div>Lỗi: {resultDetails.errors.length} dòng</div>
               )}

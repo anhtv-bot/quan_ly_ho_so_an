@@ -6,11 +6,11 @@ class CaseBase(BaseModel):
     stt: Optional[int] = None
     bien_lai_an_phi: Optional[str] = None
     so_thu_ly: Optional[str] = None
-    ngay_thu_ly: Optional[datetime] = None
+    ngay_thu_ly: Optional[datetime] = None  # Parsed automatically by Pydantic
     duong_su: Optional[str] = None
     quan_he_phap_luat: Optional[str] = None
     loai_an: Optional[str] = None
-    ngay_xet_xu: Optional[datetime] = None
+    ngay_xet_xu: Optional[datetime] = None  # Parsed automatically by Pydantic
     qd_cnstt: Optional[str] = None
     trang_thai_giai_quyet: Optional[str] = None
     ghi_chu: Optional[str] = None

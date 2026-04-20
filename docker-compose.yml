@@ -10,10 +10,10 @@ services:
     env_file:
       - .env
     environment:
-      - PORT=${PORT:-8000}
+      - PORT=${PORT:-8001}
       - SUBDOMAIN=${SUBDOMAIN:-your-subdomain}
     ports:
-      - "${PORT:-8000}:8000"
+      - "${PORT:-8001}:8001"
     volumes:
       - db_data:/app/data
 

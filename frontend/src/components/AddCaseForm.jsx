@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import axios from 'axios'
-
-const API_BASE = 'http://localhost:8000'
+import API_BASE from '../apiConfig'
 
 const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
   const [formData, setFormData] = useState({
@@ -55,12 +54,14 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
     e.preventDefault()
     setErrorMessage('')
 
-    const isoDate = formData.ngay_thu_ly ? parseDateValue(formData.ngay_thu_ly) : ''
+    const ngayThuLyIso = formData.ngay_thu_ly ? parseDateValue(formData.ngay_thu_ly) : null
+    const ngayXetXuIso = formData.ngay_xet_xu ? parseDateValue(formData.ngay_xet_xu) : null
 
     try {
       await axios.post(`${API_BASE}/cases/`, {
         ...formData,
-        ngay_thu_ly: isoDate
+        ngay_thu_ly: ngayThuLyIso,
+        ngay_xet_xu: ngayXetXuIso
       })
       setFormData({
         bien_lai_an_phi: '',

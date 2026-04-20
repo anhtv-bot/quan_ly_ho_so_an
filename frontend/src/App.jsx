@@ -5,8 +5,7 @@ import Statistics from './components/Statistics'
 import AddCaseForm from './components/AddCaseForm'
 import UploadFile from './components/UploadFile'
 import Login from './components/Login'
-
-const API_BASE = 'http://localhost:8000'
+import API_BASE from './apiConfig'
 
 function App() {
   const [cases, setCases] = useState([])

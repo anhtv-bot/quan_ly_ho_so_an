@@ -2,9 +2,9 @@ from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from .database import SessionLocal, initialize_database
-from .crud import get_cases, get_case_by_id, create_case, update_case, delete_case, get_statistics
-from .schemas import Case as CaseSchema, CaseCreate, CaseUpdate
+from backend.database import SessionLocal, initialize_database
+from backend.crud import get_cases, get_case_by_id, create_case, update_case, delete_case, get_statistics
+from backend.schemas import Case as CaseSchema, CaseCreate, CaseUpdate
 from datetime import datetime
 from io import BytesIO
 import csv

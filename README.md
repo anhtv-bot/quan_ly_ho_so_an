@@ -11,7 +11,7 @@ copy .env.example .env
 2. Mở `.env` và điền giá trị:
 ```env
 SUBDOMAIN=your-subdomain
-PORT=8000
+PORT=8001
 ```
 3. Khởi động ứng dụng:
 ```bash
@@ -25,7 +25,7 @@ docker compose ps
 ## Ghi chú
 
 - Dữ liệu SQLite được lưu vào volume `db_data` và không bị mất khi restart.
-- Ứng dụng backend lắng nghe tại cổng `8000`.
+- Ứng dụng backend lắng nghe tại cổng `8001`.
 - Frontend đã được build sẵn và phục vụ bởi backend.
 
 ## File mới

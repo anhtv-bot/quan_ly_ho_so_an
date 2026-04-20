@@ -4,6 +4,24 @@ from .models import Case
 from .schemas import CaseCreate, CaseUpdate
 from datetime import datetime
 
+def parse_date_string(date_str):
+    """Parse date string to datetime object"""
+    if not date_str or date_str == '':
+        return None
+    if isinstance(date_str, datetime):
+        return date_str
+    try:
+        # Try ISO format first
+        return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+    except ValueError:
+        # Try DD/MM/YYYY or DD-MM-YYYY format
+        for fmt in ['%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d']:
+            try:
+                return datetime.strptime(date_str, fmt)
+            except ValueError:
+                continue
+    return None
+
 def get_cases(db: Session, skip: int = 0, limit: int = 100):
     return db.query(Case).offset(skip).limit(limit).all()
 
@@ -18,15 +36,19 @@ def create_case(db: Session, case: CaseCreate):
     else:
         stt = case.stt
     
+    # Parse dates
+    ngay_thu_ly_parsed = parse_date_string(case.ngay_thu_ly)
+    ngay_xet_xu_parsed = parse_date_string(case.ngay_xet_xu)
+    
     db_case = Case(
         stt=stt,
         bien_lai_an_phi=case.bien_lai_an_phi or "",
         so_thu_ly=case.so_thu_ly,
-        ngay_thu_ly=case.ngay_thu_ly,
+        ngay_thu_ly=ngay_thu_ly_parsed,
         duong_su=case.duong_su or "",
         quan_he_phap_luat=case.quan_he_phap_luat or "",
         loai_an=case.loai_an or "",
-        ngay_xet_xu=case.ngay_xet_xu,
+        ngay_xet_xu=ngay_xet_xu_parsed,
         qd_cnstt=case.qd_cnstt or "",
         trang_thai_giai_quyet=case.trang_thai_giai_quyet or "Hòa giải thành",
         ghi_chu=case.ghi_chu or "",
@@ -43,6 +65,13 @@ def update_case(db: Session, case_id: int, case_update: CaseUpdate):
     db_case = db.query(Case).filter(Case.id == case_id).first()
     if db_case:
         updated_fields = case_update.dict(exclude_unset=True)
+        
+        # Parse dates if they are strings
+        if 'ngay_thu_ly' in updated_fields:
+            updated_fields['ngay_thu_ly'] = parse_date_string(updated_fields['ngay_thu_ly'])
+        if 'ngay_xet_xu' in updated_fields:
+            updated_fields['ngay_xet_xu'] = parse_date_string(updated_fields['ngay_xet_xu'])
+        
         for key, value in updated_fields.items():
             setattr(db_case, key, value)
 
