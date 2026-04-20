@@ -3,6 +3,8 @@ services:
     image: ${BE_IMAGE:-quanlyhosoan-be:latest}
     container_name: quanlyhosoan_be
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - PORT=${PORT:-8001}
     ports:
@@ -14,6 +16,8 @@ services:
     image: ${FE_IMAGE:-quanlyhosoan-fe:latest}
     container_name: quanlyhosoan_fe
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       - be
     ports:

@@ -98,6 +98,7 @@ docker compose down
 ## Ghi chú
 
 - Dữ liệu SQLite được lưu trong volume `db_data` tại `/app/data`.
-- File upload được mount ra máy host tại `./backend/uploads` và map vào `/app/backend/uploads` trong container.
+- File upload được mount ra máy host tại `./uploads` và map vào `/app/backend/uploads` trong container.
+- `docker-compose.yml` dùng `env_file: .env` để nạp toàn bộ biến từ file `.env` vào container khi chạy.
 - Frontend và backend chạy ở 2 container riêng.
 - `docker-compose.yml` không còn chứa phần `build`, nên phù hợp để chạy trên server sau khi image đã được build sẵn.
