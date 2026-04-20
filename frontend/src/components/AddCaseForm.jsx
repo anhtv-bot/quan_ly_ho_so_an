@@ -11,7 +11,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
     quan_he_phap_luat: '',
     ngay_xet_xu: '',
     qd_cnstt: '',
-    trang_thai_giai_quyet: 'Hòa giải thành',
+    trang_thai_giai_quyet: 'Đang giải quyết',
     ghi_chu: '',
     ma_hoa: false
   })
@@ -171,10 +171,14 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             onChange={handleChange}
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
           >
+            <option value="Đang giải quyết">Đang giải quyết</option>
             <option value="Hòa giải thành">Hòa giải thành (HGT)</option>
             <option value="Đình chỉ">Đình chỉ (ĐC)</option>
+            <option value="Tạm đình chỉ">Tạm đình chỉ (TĐC)</option>
             <option value="Nhập vụ án">Nhập vụ án (NVA)</option>
             <option value="Chuyển vụ án">Chuyển vụ án</option>
+            <option value="Xét xử">Xét xử</option>
+            <option value="Bản án">Bản án</option>
           </select>
         </div>
         <div className="md:col-span-2">

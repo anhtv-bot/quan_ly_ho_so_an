@@ -4,6 +4,19 @@ from .models import Case
 from .schemas import CaseCreate, CaseUpdate
 from datetime import datetime
 
+STATUS_CHOICES = [
+    'Đang giải quyết',
+    'Hòa giải thành',
+    'Đình chỉ',
+    'Tạm đình chỉ',
+    'Nhập vụ án',
+    'Chuyển vụ án',
+    'Xét xử',
+    'Bản án'
+]
+
+CATEGORY_CHOICES = ['Khẩn cấp', 'Ưu tiên', 'Bình thường']
+
 def parse_date_string(date_str):
     """Parse date string to datetime object"""
     if not date_str or date_str == '':
@@ -98,12 +111,8 @@ def get_statistics(db: Session):
     overdue = [c for c in active if c.han_giai_quyet and now > c.han_giai_quyet]
 
     type_counts = {}
-    status_counts = {}
-    category_counts = {
-        'Khẩn cấp': 0,
-        'Ưu tiên': 0,
-        'Bình thường': 0
-    }
+    status_counts = {status: 0 for status in STATUS_CHOICES}
+    category_counts = {category: 0 for category in CATEGORY_CHOICES}
 
     for c in cases:
         case_type = c.loai_an or 'Khác'

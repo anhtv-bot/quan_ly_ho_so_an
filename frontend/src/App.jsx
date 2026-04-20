@@ -74,10 +74,30 @@ function App() {
     }
   }
 
+  const bulkDeleteCases = async (caseIds) => {
+    if (!caseIds?.length) {
+      return false
+    }
+
+    try {
+      await axios.post(`${API_BASE}/cases/bulk-delete`, { case_ids: caseIds })
+      fetchCases()
+      fetchStats()
+      return true
+    } catch (error) {
+      console.error('Error bulk deleting cases:', error)
+      alert('Xóa hàng loạt không thành công. Vui lòng thử lại.')
+      return false
+    }
+  }
+
   const exportCaseReport = async (caseId) => {
     try {
       const response = await axios.get(`${API_BASE}/cases/${caseId}/export`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        headers: {
+          Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
       })
       const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
       const url = window.URL.createObjectURL(blob)
@@ -94,9 +114,43 @@ function App() {
     }
   }
 
+  const bulkExportCases = async (caseIds) => {
+    if (!caseIds?.length) {
+      return false
+    }
+
+    try {
+      const response = await axios.post(`${API_BASE}/cases/bulk-export`, { case_ids: caseIds }, {
+        responseType: 'blob',
+        headers: {
+          Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
+      })
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `cases_bulk_report.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      return true
+    } catch (error) {
+      console.error('Error bulk exporting cases:', error)
+      alert('Không thể tải báo cáo hàng loạt. Vui lòng thử lại.')
+      return false
+    }
+  }
+
   const handleLogout = () => {
     setIsLoggedIn(false)
     localStorage.removeItem('isLoggedIn')
+  }
+
+  const handleCaseUpdated = () => {
+    fetchCases()
+    fetchStats()
   }
 
   const getCaseCategory = (caseItem) => {
@@ -188,13 +242,20 @@ function App() {
           </div>
         )}
 
-        <Statistics stats={{...stats, category_counts: categoryCounts}} />
+        <Statistics stats={stats} />
         
-        <UploadFile onUploadSuccess={() => { fetchCases(); fetchStats(); }} backendAvailable={backendAvailable} />
+        <UploadFile onUploadSuccess={handleCaseUpdated} backendAvailable={backendAvailable} />
         
-        <AddCaseForm onCaseAdded={fetchCases} backendAvailable={backendAvailable} />
+        <AddCaseForm onCaseAdded={handleCaseUpdated} backendAvailable={backendAvailable} />
         
-        <CaseTable cases={filteredCases} onCaseUpdate={updateCase} onCaseDelete={deleteCase} onCaseExport={exportCaseReport} />
+        <CaseTable
+          cases={filteredCases}
+          onCaseUpdate={updateCase}
+          onCaseDelete={deleteCase}
+          onCaseExport={exportCaseReport}
+          onBulkDelete={bulkDeleteCases}
+          onBulkExport={bulkExportCases}
+        />
       </div>
     </div>
   )

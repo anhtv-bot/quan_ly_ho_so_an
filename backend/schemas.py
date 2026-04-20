@@ -33,6 +33,9 @@ class CaseUpdate(BaseModel):
     ghi_chu: Optional[str] = None
     ma_hoa: Optional[bool] = None
 
+class BulkActionRequest(BaseModel):
+    case_ids: list[int]
+
 class Case(CaseBase):
     id: int
     han_giai_quyet: Optional[datetime] = None

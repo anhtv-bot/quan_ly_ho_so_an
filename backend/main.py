@@ -4,8 +4,9 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal, initialize_database
+from backend.models import Case
 from backend.crud import get_cases, get_case_by_id, create_case, update_case, delete_case, get_statistics
-from backend.schemas import Case as CaseSchema, CaseCreate, CaseUpdate
+from backend.schemas import Case as CaseSchema, CaseCreate, CaseUpdate, BulkActionRequest
 from datetime import datetime
 from io import BytesIO
 import csv
@@ -14,6 +15,7 @@ import os
 import tempfile
 import unicodedata
 from openpyxl import load_workbook
+from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 
 try:
@@ -66,6 +68,20 @@ app.add_middleware(
 
 SUPPORTED_DOCUMENT_EXTENSIONS = ('.xlsx', '.xls', '.docx', '.doc', '.pdf', '.txt', '.csv')
 
+STATUS_CHOICES = [
+    'Đang giải quyết',
+    'Hòa giải thành',
+    'Đình chỉ',
+    'Tạm đình chỉ',
+    'Nhập vụ án',
+    'Chuyển vụ án',
+    'Xét xử',
+    'Bản án'
+]
+
+CATEGORY_CHOICES = ['Khẩn cấp', 'Ưu tiên', 'Bình thường']
+
+
 def get_db():
     db = SessionLocal()
     try:
@@ -77,6 +93,89 @@ def get_db():
 def read_cases(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     cases = get_cases(db, skip=skip, limit=limit)
     return cases
+
+@app.post("/cases/bulk-delete")
+@app.post("/cases/bulk-delete/")
+def bulk_delete_cases(request: BulkActionRequest, db: Session = Depends(get_db)):
+    if not request.case_ids:
+        raise HTTPException(status_code=400, detail="Không có ID hồ sơ nào để xóa")
+
+    deleted_count = db.query(Case).filter(Case.id.in_(request.case_ids)).delete(synchronize_session=False)
+    db.commit()
+    return {
+        "deleted": deleted_count,
+        "requested_ids": request.case_ids
+    }
+
+@app.post("/cases/bulk-export")
+@app.post("/cases/bulk-export/")
+def bulk_export_cases(request: BulkActionRequest, db: Session = Depends(get_db)):
+    if not request.case_ids:
+        raise HTTPException(status_code=400, detail="Không có ID hồ sơ nào để xuất")
+    if pd is None:
+        raise HTTPException(status_code=500, detail="Pandas is required for Excel export")
+
+    cases = db.query(Case).filter(Case.id.in_(request.case_ids)).order_by(Case.id).all()
+    if not cases:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ để xuất")
+
+    rows = []
+    for db_case in cases:
+        rows.append({
+            'STT': db_case.stt,
+            'Biên Lai Án Phí': db_case.bien_lai_an_phi,
+            'Số Thụ Lý': db_case.so_thu_ly,
+            'Ngày Thụ Lý': format_excel_date(db_case.ngay_thu_ly),
+            'Đương Sự': db_case.duong_su,
+            'Quan Hệ Pháp Luật': db_case.quan_he_phap_luat,
+            'Loại Án': db_case.loai_an,
+            'Ngày Xét Xử': format_excel_date(db_case.ngay_xet_xu),
+            'QĐ CNSTT': db_case.qd_cnstt,
+            'Trạng Thái Giải Quyết': db_case.trang_thai_giai_quyet,
+            'Ghi Chú': db_case.ghi_chu,
+            'Đã Mã Hóa': 'Có' if db_case.ma_hoa else 'Không',
+            'Hạn Giải Quyết': format_excel_date(db_case.han_giai_quyet)
+        })
+
+    df = pd.DataFrame(rows)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Vụ Án')
+        worksheet = writer.sheets['Vụ Án']
+        header_fill = PatternFill(start_color='FFF3F4F6', end_color='FFF3F4F6', fill_type='solid')
+        header_font = Font(color='FF000000', bold=True)
+        center_columns = {'STT', 'Số Thụ Lý', 'Ngày Thụ Lý', 'Trạng Thái Giải Quyết'}
+        left_columns = {'Đương Sự', 'Ghi Chú'}
+
+        for cell in worksheet[1]:
+            if isinstance(cell.value, str):
+                cell.value = cell.value.upper()
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        worksheet.freeze_panes = 'A2'
+        for idx, column in enumerate(df.columns, 1):
+            max_length = max(
+                [len(str(column))] + [len(str(cell.value or '')) for cell in worksheet[get_column_letter(idx)]],
+            )
+            worksheet.column_dimensions[get_column_letter(idx)].width = max_length + 2
+
+        for idx, column in enumerate(df.columns, 1):
+            alignment = 'center' if column in center_columns else 'left' if column in left_columns else 'center'
+            for row in worksheet.iter_rows(min_row=2, min_col=idx, max_col=idx, max_row=worksheet.max_row):
+                for cell in row:
+                    cell.alignment = Alignment(horizontal=alignment, vertical='center', wrap_text=True)
+    output.seek(0)
+
+    filename = f"cases_bulk_report_{datetime.now():%Y%m%d%H%M%S}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+    )
 
 @app.get("/cases/{case_id}", response_model=CaseSchema)
 def read_case(case_id: int, db: Session = Depends(get_db)):
@@ -581,7 +680,23 @@ def upload_document(file: UploadFile = File(...)):
 def get_stats(db: Session = Depends(get_db)):
     return get_statistics(db)
 
+def format_excel_date(value):
+    if value is None:
+        return ''
+    if isinstance(value, datetime):
+        return value.strftime('%d/%m/%Y')
+    try:
+        parsed = datetime.fromisoformat(str(value))
+        return parsed.strftime('%d/%m/%Y')
+    except Exception:
+        try:
+            parsed = datetime.strptime(str(value), '%Y-%m-%d')
+            return parsed.strftime('%d/%m/%Y')
+        except Exception:
+            return str(value)
+
 @app.get("/cases/{case_id}/export")
+@app.get("/cases/{case_id}/export/")
 def export_case(case_id: int, db: Session = Depends(get_db)):
     db_case = get_case_by_id(db, case_id)
     if db_case is None:
@@ -593,22 +708,29 @@ def export_case(case_id: int, db: Session = Depends(get_db)):
         'STT': db_case.stt,
         'Biên Lai Án Phí': db_case.bien_lai_an_phi,
         'Số Thụ Lý': db_case.so_thu_ly,
-        'Ngày Thụ Lý': db_case.ngay_thu_ly.isoformat() if db_case.ngay_thu_ly else '',
+        'Ngày Thụ Lý': format_excel_date(db_case.ngay_thu_ly),
         'Đương Sự': db_case.duong_su,
         'Quan Hệ Pháp Luật': db_case.quan_he_phap_luat,
         'Loại Án': db_case.loai_an,
-        'Ngày Xét Xử': db_case.ngay_xet_xu.isoformat() if db_case.ngay_xet_xu else '',
+        'Ngày Xét Xử': format_excel_date(db_case.ngay_xet_xu),
         'QĐ CNSTT': db_case.qd_cnstt,
         'Trạng Thái Giải Quyết': db_case.trang_thai_giai_quyet,
         'Ghi Chú': db_case.ghi_chu,
         'Đã Mã Hóa': 'Có' if db_case.ma_hoa else 'Không',
-        'Hạn Giải Quyết': db_case.han_giai_quyet.isoformat() if db_case.han_giai_quyet else ''
+        'Hạn Giải Quyết': format_excel_date(db_case.han_giai_quyet)
     }
     df = pd.DataFrame([data])
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Vụ Án')
         worksheet = writer.sheets['Vụ Án']
+        header_fill = PatternFill(start_color='FF4C4C4C', end_color='FF4C4C4C', fill_type='solid')
+        header_font = Font(color='FFFFFFFF', bold=True)
+        for cell in worksheet[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+        worksheet.freeze_panes = 'A2'
         for idx, column in enumerate(df.columns, 1):
             column_width = max(df[column].astype(str).map(len).max(), len(column)) + 2
             worksheet.column_dimensions[get_column_letter(idx)].width = column_width

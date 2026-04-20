@@ -1,10 +1,11 @@
 import { useState } from 'react'
 
-const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport }) => {
+const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDelete, onBulkExport }) => {
   const [editingId, setEditingId] = useState(null)
   const [editedCase, setEditedCase] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [selectedCaseIds, setSelectedCaseIds] = useState([])
 
   const getStatusColor = (caseItem) => {
     const status = caseItem.trang_thai_giai_quyet?.toString() || ''
@@ -36,10 +37,14 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport }) => {
   }
 
   const statusOptions = [
+    'Đang giải quyết',
     'Hòa giải thành',
     'Đình chỉ',
+    'Tạm đình chỉ',
     'Nhập vụ án',
-    'Chuyển vụ án'
+    'Chuyển vụ án',
+    'Xét xử',
+    'Bản án'
   ]
 
   const typeOptions = [
@@ -134,13 +139,79 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport }) => {
     }
   }
 
+  const allVisibleSelected = visibleCases.length > 0 && visibleCases.every((caseItem) => selectedCaseIds.includes(caseItem.id))
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedCaseIds((prev) => prev.filter((id) => !visibleCases.some((caseItem) => caseItem.id === id)))
+    } else {
+      setSelectedCaseIds((prev) => [...new Set([...prev, ...visibleCases.map((caseItem) => caseItem.id)])])
+    }
+  }
+
+  const toggleCaseSelection = (caseId) => {
+    setSelectedCaseIds((prev) =>
+      prev.includes(caseId) ? prev.filter((id) => id !== caseId) : [...prev, caseId]
+    )
+  }
+
+  const handleBulkDelete = async () => {
+    if (!selectedCaseIds.length) return
+    const confirmed = window.confirm(`Xác nhận xóa ${selectedCaseIds.length} hồ sơ đã chọn?`)
+    if (!confirmed) return
+
+    const success = await onBulkDelete(selectedCaseIds)
+    if (success) {
+      setSelectedCaseIds([])
+    }
+  }
+
+  const handleBulkExport = async () => {
+    if (!selectedCaseIds.length) return
+    const success = await onBulkExport(selectedCaseIds)
+    if (success) {
+      setSelectedCaseIds([])
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 card-law">
       <h2 className="text-xl font-semibold mb-4 text-law-red">Danh Sách Án</h2>
+      {selectedCaseIds.length > 0 && (
+        <div className="mb-4 rounded-lg bg-[#f8fafc] border border-blue-200 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-gray-700">
+            Đã chọn {selectedCaseIds.length} hồ sơ
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded shadow-sm"
+              onClick={handleBulkDelete}
+            >
+              Xóa mục đã chọn
+            </button>
+            <button
+              type="button"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded shadow-sm"
+              onClick={handleBulkExport}
+            >
+              Tải báo cáo đã chọn
+            </button>
+          </div>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="min-w-full table-auto">
           <thead>
             <tr className="bg-gray-50">
+              <th className="px-4 py-2 text-left">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onChange={toggleSelectAll}
+                  aria-label="Chọn tất cả"
+                />
+              </th>
               <th className="px-4 py-2 text-left">STT</th>
               <th className="px-4 py-2 text-left">Số Thụ Lý</th>
               <th className="px-4 py-2 text-left">Ngày Thụ Lý</th>
@@ -157,6 +228,14 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport }) => {
           <tbody>
             {visibleCases.map((caseItem, index) => (
               <tr key={caseItem.id} className="border-t group">
+                <td className="px-4 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedCaseIds.includes(caseItem.id)}
+                    onChange={() => toggleCaseSelection(caseItem.id)}
+                    aria-label={`Chọn hồ sơ ${startIndex + index + 1}`}
+                  />
+                </td>
                 <td className="px-4 py-2">{startIndex + index + 1}</td>
                 <td className="px-4 py-2">
                   {editingId === caseItem.id ? (
@@ -233,10 +312,9 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport }) => {
                       value={editedCase.trang_thai_giai_quyet}
                       onChange={(e) => handleFieldChange('trang_thai_giai_quyet', e.target.value)}
                     >
-                      <option value="Hòa giải thành">Hòa giải thành (HGT)</option>
-                      <option value="Đình chỉ">Đình chỉ (ĐC)</option>
-                      <option value="Nhập vụ án">Nhập vụ án (NVA)</option>
-                      <option value="Chuyển vụ án">Chuyển vụ án</option>
+                      {statusOptions.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
                     </select>
                   ) : (
                     <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(caseItem)}`}>
