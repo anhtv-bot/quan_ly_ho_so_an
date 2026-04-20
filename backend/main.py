@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal, initialize_database
@@ -13,6 +14,7 @@ import os
 import tempfile
 import unicodedata
 from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 try:
     from docx import Document as DocxDocument
@@ -578,6 +580,48 @@ def upload_document(file: UploadFile = File(...)):
 @app.get("/statistics/")
 def get_stats(db: Session = Depends(get_db)):
     return get_statistics(db)
+
+@app.get("/cases/{case_id}/export")
+def export_case(case_id: int, db: Session = Depends(get_db)):
+    db_case = get_case_by_id(db, case_id)
+    if db_case is None:
+        raise HTTPException(status_code=404, detail="Case not found")
+    if pd is None:
+        raise HTTPException(status_code=500, detail="Pandas is required for Excel export")
+
+    data = {
+        'STT': db_case.stt,
+        'Biên Lai Án Phí': db_case.bien_lai_an_phi,
+        'Số Thụ Lý': db_case.so_thu_ly,
+        'Ngày Thụ Lý': db_case.ngay_thu_ly.isoformat() if db_case.ngay_thu_ly else '',
+        'Đương Sự': db_case.duong_su,
+        'Quan Hệ Pháp Luật': db_case.quan_he_phap_luat,
+        'Loại Án': db_case.loai_an,
+        'Ngày Xét Xử': db_case.ngay_xet_xu.isoformat() if db_case.ngay_xet_xu else '',
+        'QĐ CNSTT': db_case.qd_cnstt,
+        'Trạng Thái Giải Quyết': db_case.trang_thai_giai_quyet,
+        'Ghi Chú': db_case.ghi_chu,
+        'Đã Mã Hóa': 'Có' if db_case.ma_hoa else 'Không',
+        'Hạn Giải Quyết': db_case.han_giai_quyet.isoformat() if db_case.han_giai_quyet else ''
+    }
+    df = pd.DataFrame([data])
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Vụ Án')
+        worksheet = writer.sheets['Vụ Án']
+        for idx, column in enumerate(df.columns, 1):
+            column_width = max(df[column].astype(str).map(len).max(), len(column)) + 2
+            worksheet.column_dimensions[get_column_letter(idx)].width = column_width
+    output.seek(0)
+
+    filename = f"case_{case_id}_report.xlsx"
+    return StreamingResponse(
+        output,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+    )
 
 if os.path.isdir(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="frontend")

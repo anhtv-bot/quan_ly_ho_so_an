@@ -74,6 +74,26 @@ function App() {
     }
   }
 
+  const exportCaseReport = async (caseId) => {
+    try {
+      const response = await axios.get(`${API_BASE}/cases/${caseId}/export`, {
+        responseType: 'blob'
+      })
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `case_${caseId}_report.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting case report:', error)
+      alert('Không thể tải báo cáo. Vui lòng thử lại.')
+    }
+  }
+
   const handleLogout = () => {
     setIsLoggedIn(false)
     localStorage.removeItem('isLoggedIn')
@@ -174,7 +194,7 @@ function App() {
         
         <AddCaseForm onCaseAdded={fetchCases} backendAvailable={backendAvailable} />
         
-        <CaseTable cases={filteredCases} onCaseUpdate={updateCase} onCaseDelete={deleteCase} />
+        <CaseTable cases={filteredCases} onCaseUpdate={updateCase} onCaseDelete={deleteCase} onCaseExport={exportCaseReport} />
       </div>
     </div>
   )

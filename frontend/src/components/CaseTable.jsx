@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
+const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport }) => {
   const [editingId, setEditingId] = useState(null)
   const [editedCase, setEditedCase] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -295,6 +295,17 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete }) => {
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M17.414 2.586a2 2 0 010 2.828l-9.193 9.193a1 1 0 01-.293.204l-4 1.5a1 1 0 01-1.272-1.272l1.5-4a1 1 0 01.204-.293l9.193-9.193a2 2 0 012.828 0zM15.586 5.414L14 3.828 5.586 12.242l-1 2.667 2.667-1L15.586 5.414z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className="text-blue-500 hover:text-blue-700"
+                        onClick={() => onCaseExport && onCaseExport(caseItem.id)}
+                        title="Tải báo cáo"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 3v10m0 0l-4-4m4 4l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </button>
                       <button
