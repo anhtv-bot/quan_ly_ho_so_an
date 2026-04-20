@@ -15,11 +15,20 @@ function App() {
   const [showSearch, setShowSearch] = useState(false)
   const [backendAvailable, setBackendAvailable] = useState(true)
   const [backendChecked, setBackendChecked] = useState(false)
+  const [activeFilter, setActiveFilter] = useState(null)
 
   useEffect(() => {
     fetchCases()
     fetchStats()
   }, [])
+
+  const handleFilterClick = (filterKey) => {
+    setActiveFilter((current) => (current === filterKey ? null : filterKey))
+  }
+
+  const clearFilter = () => {
+    setActiveFilter(null)
+  }
 
   useEffect(() => {
     localStorage.setItem('isLoggedIn', isLoggedIn ? 'true' : 'false')
@@ -181,7 +190,7 @@ function App() {
     const ghiChu = caseItem.ghi_chu?.toString().toLowerCase() || ''
     const maHoa = caseItem.ma_hoa ? 'đã mã hóa' : 'chưa mã hóa'
 
-    return (
+    const matchesSearch = (
       tenDuongSu.includes(searchLower) ||
       loaiAn.includes(searchLower) ||
       trangThai.includes(searchLower) ||
@@ -192,6 +201,43 @@ function App() {
       ghiChu.includes(searchLower) ||
       maHoa.includes(searchLower)
     )
+
+    const matchesFilter = (() => {
+      if (!activeFilter) return true
+      const now = new Date()
+      if (activeFilter === 'deadline:active') {
+        const status = caseItem.trang_thai_giai_quyet?.toString() || ''
+        const completedStates = ['Hòa giải thành', 'Đình chỉ', 'Nhập vụ án', 'Chuyển vụ án']
+        return !completedStates.includes(status)
+      }
+      if (activeFilter === 'deadline:warning') {
+        if (!caseItem.han_giai_quyet) return false
+        const deadline = new Date(caseItem.han_giai_quyet)
+        const daysLeft = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24))
+        const status = caseItem.trang_thai_giai_quyet?.toString() || ''
+        const completedStates = ['Hòa giải thành', 'Đình chỉ', 'Nhập vụ án', 'Chuyển vụ án']
+        return !completedStates.includes(status) && daysLeft >= 0 && daysLeft < 15
+      }
+      if (activeFilter === 'deadline:overdue') {
+        if (!caseItem.han_giai_quyet) return false
+        const deadline = new Date(caseItem.han_giai_quyet)
+        const status = caseItem.trang_thai_giai_quyet?.toString() || ''
+        const completedStates = ['Hòa giải thành', 'Đình chỉ', 'Nhập vụ án', 'Chuyển vụ án']
+        return !completedStates.includes(status) && deadline < now
+      }
+      if (activeFilter.startsWith('status:')) {
+        const filterStatus = activeFilter.replace('status:', '')
+        if (filterStatus === 'Đang giải quyết') {
+          const status = caseItem.trang_thai_giai_quyet?.toString() || ''
+          const completedStates = ['Hòa giải thành', 'Đình chỉ', 'Nhập vụ án', 'Chuyển vụ án']
+          return !completedStates.includes(status)
+        }
+        return trangThai === filterStatus.toLowerCase()
+      }
+      return true
+    })()
+
+    return matchesSearch && matchesFilter
   })
 
   if (!isLoggedIn) {
@@ -242,7 +288,7 @@ function App() {
           </div>
         )}
 
-        <Statistics stats={stats} />
+        <Statistics stats={stats} activeFilter={activeFilter} onFilterSelect={handleFilterClick} onClearFilter={clearFilter} />
         
         <UploadFile onUploadSuccess={handleCaseUpdated} backendAvailable={backendAvailable} />
         

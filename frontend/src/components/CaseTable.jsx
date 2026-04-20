@@ -28,12 +28,19 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
   }
 
   const formatDisplayDate = (value) => {
-    if (!value) return ''
-    const parsed = new Date(value)
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString('vi-VN')
+    if (!value) return '-'
+    try {
+      const parsed = new Date(value)
+      if (!Number.isNaN(parsed.getTime())) {
+        const day = String(parsed.getDate()).padStart(2, '0')
+        const month = String(parsed.getMonth() + 1).padStart(2, '0')
+        const year = parsed.getFullYear()
+        return `${day}/${month}/${year}`
+      }
+    } catch (e) {
+      // ignore
     }
-    return value
+    return '-'
   }
 
   const statusOptions = [
@@ -102,8 +109,8 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
     setEditingId(caseItem.id)
     setEditedCase({
       ...caseItem,
-      ngay_thu_ly: caseItem.ngay_thu_ly ? new Date(caseItem.ngay_thu_ly).toLocaleDateString('vi-VN') : '',
-      ngay_xet_xu: caseItem.ngay_xet_xu ? new Date(caseItem.ngay_xet_xu).toLocaleDateString('vi-VN') : '',
+      ngay_thu_ly: caseItem.ngay_thu_ly ? formatDisplayDate(caseItem.ngay_thu_ly) : '',
+      ngay_xet_xu: caseItem.ngay_xet_xu ? formatDisplayDate(caseItem.ngay_xet_xu) : '',
       trang_thai_giai_quyet: caseItem.trang_thai_giai_quyet || 'Hòa giải thành'
     })
   }
@@ -202,7 +209,7 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
       )}
       <div className="overflow-x-auto">
         <table className="min-w-full table-auto">
-          <thead>
+          <thead className="bg-gray-100">
             <tr className="bg-gray-50">
               <th className="px-4 py-2 text-left">
                 <input
@@ -219,7 +226,7 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
               <th className="px-4 py-2 text-left">Quan Hệ Pháp Luật</th>
               <th className="px-4 py-2 text-left">Ngày Xét Xử</th>
               <th className="px-4 py-2 text-left">QĐ CNSTT</th>
-              <th className="px-4 py-2 text-left">Trạng Thái Giải Quyết</th>
+              <th className="px-4 py-2 text-left min-w-[220px]">Trạng Thái Giải Quyết</th>
               <th className="px-4 py-2 text-left">Ghi Chú</th>
               <th className="px-4 py-2 text-left">Đã Mã Hóa</th>
               <th className="px-4 py-2 text-left">Hành Động</th>
@@ -227,7 +234,7 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
           </thead>
           <tbody>
             {visibleCases.map((caseItem, index) => (
-              <tr key={caseItem.id} className="border-t group">
+              <tr key={caseItem.id} className={`border-t group ${index % 2 === 0 ? 'bg-white' : 'bg-law-gray-light'}`}>
                 <td className="px-4 py-2">
                   <input
                     type="checkbox"
@@ -317,7 +324,7 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
                       ))}
                     </select>
                   ) : (
-                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(caseItem)}`}>
+                    <span className={`inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[11px] font-semibold ${getStatusColor(caseItem)}`}>
                       {caseItem.trang_thai_giai_quyet}
                     </span>
                   )}

@@ -97,7 +97,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             name="bien_lai_an_phi"
             value={formData.bien_lai_an_phi}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           />
         </div>
         <div>
@@ -107,7 +107,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             name="so_thu_ly"
             value={formData.so_thu_ly}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           />
         </div>
         <div>
@@ -118,7 +118,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             placeholder="DD/MM/YYYY"
             value={formData.ngay_thu_ly}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           />
         </div>
         <div>
@@ -128,7 +128,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             name="duong_su"
             value={formData.duong_su}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           />
         </div>
         <div>
@@ -139,7 +139,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             placeholder="Ví dụ: Xin ly hôn"
             value={formData.quan_he_phap_luat}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           />
         </div>
         <div>
@@ -150,7 +150,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             placeholder="DD/MM/YYYY (tùy chọn)"
             value={formData.ngay_xet_xu}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           />
         </div>
         <div>
@@ -160,7 +160,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             name="qd_cnstt"
             value={formData.qd_cnstt}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           />
         </div>
         <div>
@@ -169,7 +169,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             name="trang_thai_giai_quyet"
             value={formData.trang_thai_giai_quyet}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           >
             <option value="Đang giải quyết">Đang giải quyết</option>
             <option value="Hòa giải thành">Hòa giải thành (HGT)</option>
@@ -188,7 +188,7 @@ const AddCaseForm = ({ onCaseAdded, backendAvailable = true }) => {
             value={formData.ghi_chu}
             onChange={handleChange}
             rows="3"
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
           />
         </div>
         <div>

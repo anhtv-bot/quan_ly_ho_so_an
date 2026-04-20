@@ -681,8 +681,8 @@ def get_stats(db: Session = Depends(get_db)):
     return get_statistics(db)
 
 def format_excel_date(value):
-    if value is None:
-        return ''
+    if value is None or value == '':
+        return '-'
     if isinstance(value, datetime):
         return value.strftime('%d/%m/%Y')
     try:
@@ -693,7 +693,7 @@ def format_excel_date(value):
             parsed = datetime.strptime(str(value), '%Y-%m-%d')
             return parsed.strftime('%d/%m/%Y')
         except Exception:
-            return str(value)
+            return '-'
 
 @app.get("/cases/{case_id}/export")
 @app.get("/cases/{case_id}/export/")

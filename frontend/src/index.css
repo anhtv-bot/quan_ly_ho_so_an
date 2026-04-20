@@ -3,10 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --law-red: #8b0000;
-  --law-red-dark: #730000;
+  --law-red: #800000;
+  --law-red-dark: #600000;
+  --law-gold: #daa520;
+  --law-gold-dark: #b8860b;
+  --law-navy: #003366;
+  --law-navy-dark: #001f3f;
   --law-gray: #f8f9fa;
-  --law-card-border: #8b0000;
+  --law-gray-light: #f9fafb;
+  --law-card-border: #800000;
   --law-text: #111827;
   --law-text-light: #ffffff;
 }
@@ -32,6 +37,8 @@ body {
 .btn-law-red {
   background-color: var(--law-red);
   color: var(--law-text-light);
+  transition: background-color 0.3s ease;
+  border-radius: 8px;
 }
 
 .btn-law-red:hover {
@@ -41,15 +48,21 @@ body {
 .card-law {
   background-color: #ffffff;
   border-top: 4px solid var(--law-card-border);
+  border-radius: 10px;
 }
 
 .icon-law-red {
   color: var(--law-red) !important;
 }
 
-.text-law-red-strong {
-  color: var(--law-red) !important;
+.text-law-navy-dark {
+  color: var(--law-navy-dark) !important;
 }
-.bg-law-gray {
-  background-color: var(--law-gray) !important;
+
+.text-law-gold-dark {
+  color: var(--law-gold-dark) !important;
+}
+
+.bg-law-gold {
+  background-color: var(--law-gold) !important;
 }

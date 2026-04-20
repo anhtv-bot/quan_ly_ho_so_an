@@ -2,7 +2,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from .models import Case
 from .schemas import CaseCreate, CaseUpdate
-from datetime import datetime
+from datetime import datetime, timedelta
 
 STATUS_CHOICES = [
     'Đang giải quyết',
@@ -103,24 +103,48 @@ def delete_case(db: Session, case_id: int):
     return db_case
 
 def get_statistics(db: Session):
-    cases = db.query(Case).all()
     now = datetime.now()
 
-    active = [c for c in cases if not c.is_completed()]
-    warning = [c for c in active if c.han_giai_quyet and 0 <= (c.han_giai_quyet - now).days < 15]
-    overdue = [c for c in active if c.han_giai_quyet and now > c.han_giai_quyet]
+    # Count active cases (not completed)
+    active_count = db.query(Case).filter(Case.trang_thai_giai_quyet.not_in(["Hòa giải thành", "Đình chỉ", "Nhập vụ án", "Chuyển vụ án"])).count()
+    
+    # Count warning cases (active and deadline within 15 days)
+    warning_count = db.query(Case).filter(
+        Case.trang_thai_giai_quyet.not_in(["Hòa giải thành", "Đình chỉ", "Nhập vụ án", "Chuyển vụ án"]),
+        Case.han_giai_quyet != None,
+        Case.han_giai_quyet >= now,
+        (Case.han_giai_quyet - now) <= timedelta(days=15)
+    ).count()
+    
+    # Count overdue cases (active and past deadline)
+    overdue_count = db.query(Case).filter(
+        Case.trang_thai_giai_quyet.not_in(["Hòa giải thành", "Đình chỉ", "Nhập vụ án", "Chuyển vụ án"]),
+        Case.han_giai_quyet != None,
+        Case.han_giai_quyet < now
+    ).count()
 
+    # Count status directly from database
+    status_counts = {}
+    for status in STATUS_CHOICES:
+        status_counts[status] = db.query(Case).filter(Case.trang_thai_giai_quyet == status).count()
+    
+    # Handle cases with invalid or null status -> assign to 'Đang giải quyết'
+    invalid_count = db.query(Case).filter(
+        (Case.trang_thai_giai_quyet == None) | (Case.trang_thai_giai_quyet.not_in(STATUS_CHOICES))
+    ).count()
+    status_counts['Đang giải quyết'] += invalid_count
+
+    # Note: type_counts and category_counts are kept for potential future use, but not used in frontend
     type_counts = {}
-    status_counts = {status: 0 for status in STATUS_CHOICES}
     category_counts = {category: 0 for category in CATEGORY_CHOICES}
-
+    
+    # For type_counts (if needed)
+    cases = db.query(Case).all()
     for c in cases:
         case_type = c.loai_an or 'Khác'
         type_counts[case_type] = type_counts.get(case_type, 0) + 1
 
-        status = c.trang_thai_giai_quyet or 'Chưa xác định'
-        status_counts[status] = status_counts.get(status, 0) + 1
-
+        # Category logic (kept for compatibility)
         if c.ngay_thu_ly:
             days_since = (now - c.ngay_thu_ly).days
         else:
@@ -135,9 +159,9 @@ def get_statistics(db: Session):
         category_counts[category] = category_counts.get(category, 0) + 1
 
     return {
-        "dang_giai_quyet": len(active),
-        "an_sap_het_han": len(warning),
-        "an_qua_han": len(overdue),
+        "dang_giai_quyet": active_count,
+        "an_sap_het_han": warning_count,
+        "an_qua_han": overdue_count,
         "type_counts": type_counts,
         "status_counts": status_counts,
         "category_counts": category_counts
