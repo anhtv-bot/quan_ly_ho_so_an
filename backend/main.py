@@ -49,18 +49,24 @@ app = FastAPI(title="Quản lý Hồ Sơ Án API")
 
 static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend/dist"))
 
-origins = [
+DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174"
+    "http://127.0.0.1:5174",
 ]
+
+
+def get_allowed_origins():
+    configured_origins = os.environ.get("CORS_ALLOW_ORIGINS", "")
+    origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()]
+    return origins or DEFAULT_CORS_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]

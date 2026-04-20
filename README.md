@@ -24,6 +24,7 @@ FRONTEND_PORT=3000
 BE_IMAGE=quanlyhosoan-be:latest
 FE_IMAGE=quanlyhosoan-fe:latest
 VITE_API_BASE=http://localhost:8001
+CORS_ALLOW_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
 ```
 
 Lưu ý:
@@ -32,6 +33,7 @@ Lưu ý:
 - `FRONTEND_PORT` là cổng frontend ngoài máy host.
 - `BE_IMAGE` và `FE_IMAGE` là tên image được build và dùng khi chạy container.
 - Nếu đổi `PORT`, hãy đổi luôn `VITE_API_BASE` cho đúng API URL mà frontend sẽ gọi khi build.
+- `CORS_ALLOW_ORIGINS` là danh sách domain frontend được phép gọi backend, ngăn cách nhau bằng dấu phẩy.
 
 ## Build Image Trên Server
 
@@ -39,6 +41,17 @@ Build riêng image:
 
 ```bash
 docker compose -f docker-compose.build.yml build
+```
+
+Ví dụ chạy bằng domain thật:
+
+```env
+PORT=8001
+FRONTEND_PORT=3000
+BE_IMAGE=quanlyhosoan-be:latest
+FE_IMAGE=quanlyhosoan-fe:latest
+VITE_API_BASE=https://quanlyhosoapi.chinhquyenai.vn
+CORS_ALLOW_ORIGINS=https://quanlyhoso.chinhquyenai.vn
 ```
 
 Sau khi build xong sẽ có:
@@ -76,6 +89,8 @@ docker compose down
 docker compose -f docker-compose.build.yml build
 docker compose up -d
 ```
+
+Nếu bạn thay đổi `VITE_API_BASE` hoặc `CORS_ALLOW_ORIGINS`, hãy build lại và khởi động lại backend/frontend để nhận cấu hình mới.
 
 Nếu chỉ restart container mà không build lại:
 
