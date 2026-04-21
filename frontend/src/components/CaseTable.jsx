@@ -182,140 +182,141 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 card-law">
-      <h2 className="text-xl font-semibold mb-4 text-law-red">Danh Sách Án</h2>
+    <div className="bg-white rounded-lg shadow-md p-4 card-law">
+      <h2 className="text-lg font-semibold mb-3 text-law-red">Danh Sách Án</h2>
       {selectedCaseIds.length > 0 && (
-        <div className="mb-4 rounded-lg bg-[#f8fafc] border border-blue-200 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-gray-700">
-            Đã chọn {selectedCaseIds.length} hồ sơ
+        <div className="mb-3 rounded-lg bg-blue-50 border border-blue-200 p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-gray-700">
+            ✓ Đã chọn {selectedCaseIds.length} hồ sơ
           </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded shadow-sm"
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition"
               onClick={handleBulkDelete}
             >
-              Xóa mục đã chọn
+              Xóa ({selectedCaseIds.length})
             </button>
             <button
               type="button"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded shadow-sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition"
               onClick={handleBulkExport}
             >
-              Tải báo cáo đã chọn
+              Tải báo cáo
             </button>
           </div>
         </div>
       )}
       <div className="overflow-x-auto">
-        <table className="min-w-full table-auto">
-          <thead className="bg-gray-100">
-            <tr className="bg-gray-50">
-              <th className="px-4 py-2 text-left">
+        <table className="min-w-full table-auto text-xs" style={{fontSize: '13px'}}>
+          <thead className="bg-gray-100 sticky top-0">
+            <tr className="bg-gray-50 text-gray-700">
+              <th className="px-2 py-1.5 text-left w-8">
                 <input
                   type="checkbox"
                   checked={allVisibleSelected}
                   onChange={toggleSelectAll}
                   aria-label="Chọn tất cả"
+                  className="w-4 h-4"
                 />
               </th>
-              <th className="px-4 py-2 text-left">STT</th>
-              <th className="px-4 py-2 text-left">Số Thụ Lý</th>
-              <th className="px-4 py-2 text-left">Ngày Thụ Lý</th>
-              <th className="px-4 py-2 text-left">Đương Sự</th>
-              <th className="px-4 py-2 text-left">Quan Hệ Pháp Luật</th>
-              <th className="px-4 py-2 text-left">Ngày Xét Xử</th>
-              <th className="px-4 py-2 text-left">QĐ CNSTT</th>
-              <th className="px-4 py-2 text-left min-w-[220px]">Trạng Thái Giải Quyết</th>
-              <th className="px-4 py-2 text-left">Ghi Chú</th>
-              <th className="px-4 py-2 text-left">Đã Mã Hóa</th>
-              <th className="px-4 py-2 text-left">Hành Động</th>
+              <th className="px-2 py-1.5 text-left w-12">STT</th>
+              <th className="px-2 py-1.5 text-left w-24">Số Thụ Lý</th>
+              <th className="px-2 py-1.5 text-left w-20">Ngày Thụ Lý</th>
+              <th className="px-2 py-1.5 text-left min-w-32">Đương Sự</th>
+              <th className="px-2 py-1.5 text-left min-w-40">Quan Hệ Pháp Luật</th>
+              <th className="px-2 py-1.5 text-left w-20">Ngày Xét Xử</th>
+              <th className="px-2 py-1.5 text-left w-20">QĐ CNSTT</th>
+              <th className="px-2 py-1.5 text-left w-28">Trạng Thái</th>
+              <th className="px-2 py-1.5 text-left min-w-32">Ghi Chú</th>
+              <th className="px-2 py-1.5 text-left w-24">Hành Động</th>
             </tr>
           </thead>
           <tbody>
             {visibleCases.map((caseItem, index) => (
-              <tr key={caseItem.id} className={`border-t group ${index % 2 === 0 ? 'bg-white' : 'bg-law-gray-light'}`}>
-                <td className="px-4 py-2">
+              <tr key={caseItem.id} className={`border-t group h-12 hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                <td className="px-2 py-1.5">
                   <input
                     type="checkbox"
                     checked={selectedCaseIds.includes(caseItem.id)}
                     onChange={() => toggleCaseSelection(caseItem.id)}
                     aria-label={`Chọn hồ sơ ${startIndex + index + 1}`}
+                    className="w-4 h-4"
                   />
                 </td>
-                <td className="px-4 py-2">{startIndex + index + 1}</td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5 text-center">{startIndex + index + 1}</td>
+                <td className="px-2 py-1.5 truncate max-w-xs">
                   {editingId === caseItem.id ? (
                     <input
-                      className="w-full border rounded px-2 py-1"
+                      className="w-full border rounded px-1 py-0.5 text-xs"
                       value={editedCase.so_thu_ly}
                       onChange={(e) => handleFieldChange('so_thu_ly', e.target.value)}
                     />
                   ) : (
-                    caseItem.so_thu_ly
+                    <span title={caseItem.so_thu_ly}>{caseItem.so_thu_ly || '-'}</span>
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5 text-center">
                   {editingId === caseItem.id ? (
                     <input
-                      className="w-full border rounded px-2 py-1"
+                      className="w-full border rounded px-1 py-0.5 text-xs"
                       value={editedCase.ngay_thu_ly}
                       onChange={(e) => handleFieldChange('ngay_thu_ly', e.target.value)}
                       placeholder="DD/MM/YYYY"
                     />
                   ) : (
-                    formatDisplayDate(caseItem.ngay_thu_ly)
+                    <span title={formatDisplayDate(caseItem.ngay_thu_ly)}>{formatDisplayDate(caseItem.ngay_thu_ly)}</span>
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5 line-clamp-1">
                   {editingId === caseItem.id ? (
                     <input
-                      className="w-full border rounded px-2 py-1"
+                      className="w-full border rounded px-1 py-0.5 text-xs"
                       value={editedCase.duong_su || ''}
                       onChange={(e) => handleFieldChange('duong_su', e.target.value)}
                     />
                   ) : (
-                    caseItem.duong_su || ''
+                    <span title={caseItem.duong_su || '-'}>{caseItem.duong_su || '-'}</span>
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5 line-clamp-1">
                   {editingId === caseItem.id ? (
                     <input
-                      className="w-full border rounded px-2 py-1"
+                      className="w-full border rounded px-1 py-0.5 text-xs"
                       value={editedCase.quan_he_phap_luat || ''}
                       onChange={(e) => handleFieldChange('quan_he_phap_luat', e.target.value)}
                     />
                   ) : (
-                    caseItem.quan_he_phap_luat || ''
+                    <span title={caseItem.quan_he_phap_luat || '-'}>{caseItem.quan_he_phap_luat || '-'}</span>
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5 text-center">
                   {editingId === caseItem.id ? (
                     <input
-                      className="w-full border rounded px-2 py-1"
+                      className="w-full border rounded px-1 py-0.5 text-xs"
                       value={editedCase.ngay_xet_xu}
                       onChange={(e) => handleFieldChange('ngay_xet_xu', e.target.value)}
                       placeholder="DD/MM/YYYY"
                     />
                   ) : (
-                    formatDisplayDate(caseItem.ngay_xet_xu)
+                    <span title={formatDisplayDate(caseItem.ngay_xet_xu)}>{formatDisplayDate(caseItem.ngay_xet_xu)}</span>
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5 truncate max-w-xs">
                   {editingId === caseItem.id ? (
                     <input
-                      className="w-full border rounded px-2 py-1"
+                      className="w-full border rounded px-1 py-0.5 text-xs"
                       value={editedCase.qd_cnstt || ''}
                       onChange={(e) => handleFieldChange('qd_cnstt', e.target.value)}
                     />
                   ) : (
-                    caseItem.qd_cnstt || ''
+                    <span title={caseItem.qd_cnstt || '-'}>{caseItem.qd_cnstt || '-'}</span>
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5">
                   {editingId === caseItem.id ? (
                     <select
-                      className="w-full border rounded px-2 py-1"
+                      className="w-full border rounded px-1 py-0.5 text-xs"
                       value={editedCase.trang_thai_giai_quyet}
                       onChange={(e) => handleFieldChange('trang_thai_giai_quyet', e.target.value)}
                     >
@@ -324,85 +325,71 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
                       ))}
                     </select>
                   ) : (
-                    <span className={`inline-flex whitespace-nowrap px-3 py-1 rounded-full text-[11px] font-semibold ${getStatusColor(caseItem)}`}>
-                      {caseItem.trang_thai_giai_quyet}
+                    <span className={`inline-flex whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-semibold line-clamp-1 ${getStatusColor(caseItem)}`}>
+                      {caseItem.trang_thai_giai_quyet || '-'}
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5 line-clamp-1">
                   {editingId === caseItem.id ? (
                     <textarea
-                      className="w-full border rounded px-2 py-1"
+                      className="w-full border rounded px-1 py-0.5 text-xs"
                       value={editedCase.ghi_chu}
                       onChange={(e) => handleFieldChange('ghi_chu', e.target.value)}
-                      rows="2"
+                      rows="1"
                     />
                   ) : (
-                    caseItem.ghi_chu
+                    <span title={caseItem.ghi_chu || '-'}>{caseItem.ghi_chu || '-'}</span>
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 py-1.5">
                   {editingId === caseItem.id ? (
-                    <input
-                      type="checkbox"
-                      checked={editedCase.ma_hoa}
-                      onChange={(e) => handleFieldChange('ma_hoa', e.target.checked)}
-                    />
-                  ) : (
-                    caseItem.ma_hoa ? '✓' : ''
-                  )}
-                </td>
-                <td className="px-4 py-2">
-                  {editingId === caseItem.id ? (
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <button
                         type="button"
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded"
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold px-2 py-0.5 rounded text-xs"
                         onClick={handleSave}
                       >
                         Lưu
                       </button>
                       <button
                         type="button"
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-3 py-1 rounded"
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold px-2 py-0.5 rounded text-xs"
                         onClick={handleCancel}
                       >
                         Hủy
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-400 hover:text-gray-600 p-1"
                         onClick={() => handleEditClick(caseItem)}
-                        title="Chỉnh sửa toàn bộ án"
+                        title="Chỉnh sửa"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M17.414 2.586a2 2 0 010 2.828l-9.193 9.193a1 1 0 01-.293.204l-4 1.5a1 1 0 01-1.272-1.272l1.5-4a1 1 0 01.204-.293l9.193-9.193a2 2 0 012.828 0zM15.586 5.414L14 3.828 5.586 12.242l-1 2.667 2.667-1L15.586 5.414z" />
                         </svg>
                       </button>
                       <button
                         type="button"
-                        className="text-blue-500 hover:text-blue-700"
+                        className="text-blue-400 hover:text-blue-600 p-1"
                         onClick={() => onCaseExport && onCaseExport(caseItem.id)}
-                        title="Tải báo cáo"
+                        title="Tải xuống"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 3v10m0 0l-4-4m4 4l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                          <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                       </button>
                       <button
                         type="button"
-                        className="text-red-600 hover:text-red-800"
+                        className="text-red-400 hover:text-red-600 p-1"
                         onClick={() => handleDelete(caseItem)}
-                        title="Xóa án"
+                        title="Xóa"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M8 9a1 1 0 112 0v6a1 1 0 11-2 0V9zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V9z" clipRule="evenodd" />
-                          <path d="M5 4a1 1 0 011-1h8a1 1 0 011 1v1H5V4z" />
-                          <path fillRule="evenodd" d="M4 7a1 1 0 011-1h10a1 1 0 011 1v9a2 2 0 01-2 2H6a2 2 0 01-2-2V7zm2 1v8h8V8H6z" clipRule="evenodd" />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                       </button>
                     </div>
@@ -413,20 +400,20 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
           </tbody>
         </table>
       </div>
-      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="text-sm text-gray-600">
-          Hiển thị {visibleCases.length} trên {cases.length} án
+      <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-xs">
+        <div className="text-gray-600">
+          Hiển thị {visibleCases.length} / {cases.length} án
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <span>Số dòng mỗi trang:</span>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+          <label className="flex items-center gap-1 text-gray-700">
+            <span>Dòng/trang:</span>
             <select
               value={pageSize}
               onChange={(e) => {
                 setPageSize(Number(e.target.value))
                 setCurrentPage(1)
               }}
-              className="border border-gray-300 rounded-md p-1"
+              className="border border-gray-300 rounded px-2 py-0.5 text-xs"
             >
               <option value={5}>5</option>
               <option value={10}>10</option>
@@ -434,25 +421,25 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
               <option value={50}>50</option>
             </select>
           </label>
-          <div className="flex items-center gap-2 text-sm text-gray-700">
+          <div className="flex items-center gap-1 text-gray-700">
             <button
               type="button"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 rounded border border-gray-300 bg-white disabled:opacity-50"
+              className="px-2 py-0.5 rounded border border-gray-300 bg-white disabled:opacity-50 text-xs"
             >
-              Trước
+              ← Trước
             </button>
-            <span>
+            <span className="text-gray-600">
               Trang {currentPage} / {totalPages}
             </span>
             <button
               type="button"
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 rounded border border-gray-300 bg-white disabled:opacity-50"
+              className="px-2 py-0.5 rounded border border-gray-300 bg-white disabled:opacity-50 text-xs"
             >
-              Sau
+              Sau →
             </button>
           </div>
         </div>

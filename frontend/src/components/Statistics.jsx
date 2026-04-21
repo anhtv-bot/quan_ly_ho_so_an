@@ -54,51 +54,38 @@ const Statistics = ({ stats, activeFilter, onFilterSelect, onClearFilter }) => {
 
   return (
     <>
-      <div onClick={onClearFilter} className="mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+      <div onClick={onClearFilter} className="mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
           {upperStats.map((item) => {
             const IconComponent = item.icon
-            const isActive = activeFilter === item.filterKey
             return (
-              <button
-                type="button"
+              <div
                 key={item.title}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onFilterSelect(item.filterKey)
-                }}
-                className={`w-full ${item.bgClass} rounded-lg shadow-sm p-4 text-center card-law transition hover:shadow-lg focus:outline-none ${isActive ? 'ring-2 ring-law-red' : 'border'} cursor-pointer`}
+                className={`w-full ${item.bgClass} rounded-lg shadow-sm p-3 text-center card-law transition border cursor-default`}
               >
-                <div className="flex items-center justify-center mb-2">
-                  <IconComponent className="w-6 h-6 text-law-gold mr-2" />
-                  <h3 className="text-sm font-semibold text-law-red">{item.title}</h3>
+                <div className="flex items-center justify-center mb-1">
+                  <IconComponent className="w-5 h-5 text-law-gold mr-1" />
+                  <h3 className="text-xs font-semibold text-law-red">{item.title}</h3>
                 </div>
-                <p className={`text-4xl font-bold ${item.valueClass}`}>{item.value}</p>
-              </button>
+                <p className={`text-2xl font-bold ${item.valueClass}`}>{item.value}</p>
+              </div>
             )
           })}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
           {order.map((status) => {
             const IconComponent = statusIcons[status]
-            const filterKey = `status:${status}`
-            const isActive = activeFilter === filterKey
             return (
-              <button
-                type="button"
+              <div
                 key={status}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onFilterSelect(filterKey)
-                }}
-                className={`w-full bg-white rounded-lg shadow-sm p-4 text-center card-law transition hover:shadow-lg focus:outline-none ${isActive ? 'ring-2 ring-law-red' : 'border'} cursor-pointer`}
+                className={`w-full bg-white rounded-lg shadow-sm p-3 text-center card-law transition border cursor-default`}
               >
-                <div className="flex items-center justify-center mb-2">
-                  <IconComponent className="w-5 h-5 text-law-gold mr-1" />
-                  <h3 className="text-xs font-semibold text-law-red">{status}</h3>
+                <div className="flex items-center justify-center mb-1">
+                  <IconComponent className="w-4 h-4 text-law-gold mr-0.5" />
+                  <h3 className="text-xs font-semibold text-law-red line-clamp-1">{status}</h3>
                 </div>
-                <p className="text-3xl font-bold text-blue-600">{statusCounts[status] ?? 0}</p>
-              </button>
+                <p className="text-xl font-bold text-blue-600">{statusCounts[status] ?? 0}</p>
+              </div>
             )
           })}
         </div>

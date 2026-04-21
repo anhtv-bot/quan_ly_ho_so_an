@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import Sidebar from './components/Sidebar'
 import CaseTable from './components/CaseTable'
 import Statistics from './components/Statistics'
 import AddCaseForm from './components/AddCaseForm'
-import UploadFile from './components/UploadFile'
 import Login from './components/Login'
 import API_BASE from './apiConfig'
 
@@ -12,7 +12,9 @@ function App() {
   const [stats, setStats] = useState({})
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true')
   const [searchTerm, setSearchTerm] = useState('')
-  const [showSearch, setShowSearch] = useState(false)
+  const [selectedTab, setSelectedTab] = useState('dashboard')
+  const [selectedMonth, setSelectedMonth] = useState('')
+  const [selectedYear, setSelectedYear] = useState('')
   const [backendAvailable, setBackendAvailable] = useState(true)
   const [backendChecked, setBackendChecked] = useState(false)
   const [activeFilter, setActiveFilter] = useState(null)
@@ -172,13 +174,41 @@ function App() {
     return 'Bình thường'
   }
 
-  const categoryCounts = cases.reduce((acc, caseItem) => {
-    const cat = getCaseCategory(caseItem)
-    acc[cat] = (acc[cat] || 0) + 1
-    return acc
-  }, {})
+  const monthOptions = [
+    { value: '', label: 'Tất cả tháng' },
+    { value: '1', label: 'Tháng 1' },
+    { value: '2', label: 'Tháng 2' },
+    { value: '3', label: 'Tháng 3' },
+    { value: '4', label: 'Tháng 4' },
+    { value: '5', label: 'Tháng 5' },
+    { value: '6', label: 'Tháng 6' },
+    { value: '7', label: 'Tháng 7' },
+    { value: '8', label: 'Tháng 8' },
+    { value: '9', label: 'Tháng 9' },
+    { value: '10', label: 'Tháng 10' },
+    { value: '11', label: 'Tháng 11' },
+    { value: '12', label: 'Tháng 12' }
+  ]
 
-  const filteredCases = cases.filter(caseItem => {
+  const yearOptions = Array.from(
+    new Set(
+      cases
+        .map((caseItem) => {
+          const date = new Date(caseItem.ngay_thu_ly)
+          return !Number.isNaN(date.getFullYear()) ? date.getFullYear().toString() : null
+        })
+        .filter(Boolean)
+    )
+  ).sort((a, b) => Number(b) - Number(a))
+
+  const parseDateParts = (value) => {
+    if (!value) return null
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    return { month: date.getMonth() + 1, year: date.getFullYear() }
+  }
+
+  const filteredCases = cases.filter((caseItem) => {
     const searchLower = searchTerm.toLowerCase()
     const tenDuongSu = caseItem.duong_su?.toString().toLowerCase() || ''
     const loaiAn = caseItem.loai_an?.toString().toLowerCase() || ''
@@ -202,9 +232,22 @@ function App() {
       maHoa.includes(searchLower)
     )
 
+    const monthYear = parseDateParts(caseItem.ngay_thu_ly)
+    const matchesMonth = !selectedMonth || (monthYear && monthYear.month === Number(selectedMonth))
+    const matchesYear = !selectedYear || (monthYear && monthYear.year === Number(selectedYear))
+
     const matchesFilter = (() => {
-      if (!activeFilter) return true
-      const now = new Date()
+      if (!activeFilter || activeFilter === 'all') return true
+      
+      if (activeFilter === 'hoa-giai-thanh') {
+        return caseItem.trang_thai_giai_quyet === 'Hòa giải thành'
+      }
+      if (activeFilter === 'xet-xu') {
+        return caseItem.trang_thai_giai_quyet === 'Xét xử'
+      }
+      if (activeFilter === 'dinh-chi') {
+        return caseItem.trang_thai_giai_quyet === 'Đình chỉ'
+      }
       if (activeFilter === 'deadline:active') {
         const status = caseItem.trang_thai_giai_quyet?.toString() || ''
         const completedStates = ['Hòa giải thành', 'Đình chỉ', 'Nhập vụ án', 'Chuyển vụ án']
@@ -237,8 +280,68 @@ function App() {
       return true
     })()
 
-    return matchesSearch && matchesFilter
+    return matchesSearch && matchesFilter && matchesMonth && matchesYear
   })
+
+  const summaryCounts = {
+    totalResolved: filteredCases.filter(caseItem => {
+      const status = caseItem.trang_thai_giai_quyet?.toString() || ''
+      const completedStates = ['Xét xử', 'QĐ CNSTT', 'Hòa giải thành', 'Đình chỉ', 'Tạm đình chỉ']
+      return completedStates.some(state => status.includes(state))
+    }).length,
+    hoaGiaiThanh: filteredCases.filter(caseItem => {
+      const status = caseItem.trang_thai_giai_quyet?.toString() || ''
+      return status.includes('QĐ CNSTT') || status.includes('Hòa giải thành')
+    }).length,
+    xetXu: filteredCases.filter((caseItem) => caseItem.trang_thai_giai_quyet === 'Xét xử').length,
+    dinhChi: filteredCases.filter(caseItem => {
+      const status = caseItem.trang_thai_giai_quyet?.toString() || ''
+      return status.includes('Đình chỉ') || status.includes('Tạm đình chỉ')
+    }).length
+  }
+
+  const categoryCounts = cases.reduce((acc, caseItem) => {
+    const cat = getCaseCategory(caseItem)
+    acc[cat] = (acc[cat] || 0) + 1
+    return acc
+  }, {})
+
+  const renderSummaryBar = () => (
+    <div className="grid gap-3 lg:grid-cols-4 mb-4">
+      <button
+        type="button"
+        onClick={() => handleFilterClick('all')}
+        className={`rounded-lg p-4 shadow-sm border transition hover:shadow-md focus:outline-none cursor-pointer ${activeFilter === 'all' ? 'bg-red-50 border-red-300 ring-2 ring-law-red' : 'bg-white border-gray-200'}`}
+      >
+        <p className="text-xs text-gray-500 font-medium">Tổng giải quyết</p>
+        <p className={`mt-2 text-2xl font-bold ${activeFilter === 'all' ? 'text-law-red' : 'text-law-red'}`}>{summaryCounts.totalResolved}</p>
+      </button>
+      <button
+        type="button"
+        onClick={() => handleFilterClick('hoa-giai-thanh')}
+        className={`rounded-lg p-4 shadow-sm border transition hover:shadow-md focus:outline-none cursor-pointer ${activeFilter === 'hoa-giai-thanh' ? 'bg-emerald-100 border-emerald-400 ring-2 ring-emerald-600' : 'bg-emerald-50 border-emerald-200'}`}
+      >
+        <p className={`text-xs font-medium ${activeFilter === 'hoa-giai-thanh' ? 'text-emerald-700' : 'text-emerald-600'}`}>Hòa giải thành</p>
+        <p className="mt-2 text-2xl font-bold text-emerald-900">{summaryCounts.hoaGiaiThanh}</p>
+      </button>
+      <button
+        type="button"
+        onClick={() => handleFilterClick('xet-xu')}
+        className={`rounded-lg p-4 shadow-sm border transition hover:shadow-md focus:outline-none cursor-pointer ${activeFilter === 'xet-xu' ? 'bg-sky-100 border-sky-400 ring-2 ring-sky-600' : 'bg-sky-50 border-sky-200'}`}
+      >
+        <p className={`text-xs font-medium ${activeFilter === 'xet-xu' ? 'text-sky-700' : 'text-sky-600'}`}>Xét xử</p>
+        <p className="mt-2 text-2xl font-bold text-sky-900">{summaryCounts.xetXu}</p>
+      </button>
+      <button
+        type="button"
+        onClick={() => handleFilterClick('dinh-chi')}
+        className={`rounded-lg p-4 shadow-sm border transition hover:shadow-md focus:outline-none cursor-pointer ${activeFilter === 'dinh-chi' ? 'bg-orange-100 border-orange-400 ring-2 ring-orange-600' : 'bg-orange-50 border-orange-200'}`}
+      >
+        <p className={`text-xs font-medium ${activeFilter === 'dinh-chi' ? 'text-orange-700' : 'text-orange-600'}`}>Đình chỉ</p>
+        <p className="mt-2 text-2xl font-bold text-orange-900">{summaryCounts.dinhChi}</p>
+      </button>
+    </div>
+  )
 
   if (!isLoggedIn) {
     return <Login onLogin={() => setIsLoggedIn(true)} />
@@ -247,61 +350,101 @@ function App() {
   return (
     <div className="min-h-screen bg-law-gray">
       <header className="bg-law-red shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-law-white">Quản Lý Hồ Sơ Án</h1>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <button onClick={() => setShowSearch(!showSearch)} className="p-2 rounded-full hover:bg-[#7a0000] text-law-white">
-                <svg className="w-5 h-5 text-law-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-              {showSearch && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 p-4">
+        <div className="container mx-auto px-4 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-law-white">Quản Lý Hồ Sơ Án</h1>
+            <p className="text-sm font-semibold text-white">Hệ thống quản lý hồ sơ án chuyên nghiệp</p>
+          </div>
+          <button onClick={handleLogout} className="btn-law-red px-4 py-2 rounded-lg">Đăng xuất</button>
+        </div>
+      </header>
+
+      <div className="container mx-auto grid gap-6 lg:grid-cols-[200px_1fr] px-4 py-6">
+        <aside>
+          <Sidebar selectedTab={selectedTab} onSelectTab={setSelectedTab} />
+        </aside>
+
+        <main className="space-y-6">
+          {!backendAvailable && backendChecked && (
+            <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
+              Đang kết nối máy chủ dữ liệu, vui lòng đợi giây lát...
+            </div>
+          )}
+
+          <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold text-law-red">
+                  {selectedTab === 'dashboard' && 'Tổng quan'}
+                  {selectedTab === 'list' && 'Danh sách hồ sơ'}
+                  {selectedTab === 'add' && 'Thêm án mới'}
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">Chọn mục bên trái để quản lý và lọc hồ sơ nhanh.</p>
+              </div>
+              {selectedTab !== 'add' && (
+                <div className="grid gap-3 sm:grid-cols-3 w-full lg:w-auto">
                   <input
                     type="text"
-                    placeholder="Tìm theo tên, loại án, trạng thái, ngày, biên lai..."
+                    placeholder="Tìm theo tên đương sự hoặc số thụ lý"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b0000]"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-law-red focus:ring-law-red/20"
                   />
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-law-red focus:ring-law-red/20"
+                  >
+                    {monthOptions.map((month) => (
+                      <option key={month.value} value={month.value}>{month.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-law-red focus:ring-law-red/20"
+                  >
+                    <option value="">Tất cả năm</option>
+                    {yearOptions.map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>
-            <div className="relative group">
-              <button className="p-2 rounded-full hover:bg-[#7a0000] text-law-white">
-                <svg className="w-5 h-5 text-law-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200">
-                <button onClick={handleLogout} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Đăng xuất</button>
-              </div>
-            </div>
           </div>
-        </div>
-      </header>
-      <div className="container mx-auto p-4">
-        {!backendAvailable && backendChecked && (
-          <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
-            Đang kết nối máy chủ dữ liệu, vui lòng đợi giây lát...
-          </div>
-        )}
 
-        <Statistics stats={stats} activeFilter={activeFilter} onFilterSelect={handleFilterClick} onClearFilter={clearFilter} />
-        
-        <UploadFile onUploadSuccess={handleCaseUpdated} backendAvailable={backendAvailable} />
-        
-        <AddCaseForm onCaseAdded={handleCaseUpdated} backendAvailable={backendAvailable} />
-        
-        <CaseTable
-          cases={filteredCases}
-          onCaseUpdate={updateCase}
-          onCaseDelete={deleteCase}
-          onCaseExport={exportCaseReport}
-          onBulkDelete={bulkDeleteCases}
-          onBulkExport={bulkExportCases}
-        />
+          {selectedTab === 'dashboard' && (
+            <>
+              {renderSummaryBar()}
+              <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200">
+                <Statistics stats={stats} activeFilter={activeFilter} onFilterSelect={handleFilterClick} onClearFilter={clearFilter} />
+              </div>
+            </>
+          )}
+
+          {selectedTab === 'list' && (
+            <>
+              {renderSummaryBar()}
+              <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200">
+                <CaseTable
+                  cases={filteredCases}
+                  onCaseUpdate={updateCase}
+                  onCaseDelete={deleteCase}
+                  onCaseExport={exportCaseReport}
+                  onBulkDelete={bulkDeleteCases}
+                  onBulkExport={bulkExportCases}
+                />
+              </div>
+            </>
+          )}
+
+          {selectedTab === 'add' && (
+            <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200">
+              <AddCaseForm onCaseAdded={handleCaseUpdated} backendAvailable={backendAvailable} />
+            </div>
+          )}
+        </main>
       </div>
     </div>
   )

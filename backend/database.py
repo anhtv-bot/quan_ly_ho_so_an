@@ -5,7 +5,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./data/cases.db"
+# Tạo absolute path cho database
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+DB_PATH = os.path.join(DATA_DIR, "cases.db")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
@@ -33,9 +37,7 @@ EXPECTED_CASE_COLUMNS = {
 
 
 def _get_db_path():
-    if SQLALCHEMY_DATABASE_URL.startswith("sqlite:///"):
-        return os.path.abspath(SQLALCHEMY_DATABASE_URL.replace("sqlite:///", ""))
-    raise RuntimeError("Unsupported database URL")
+    return DB_PATH
 
 
 def initialize_database():
