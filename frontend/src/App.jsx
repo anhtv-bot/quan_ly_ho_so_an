@@ -5,6 +5,10 @@ import Statistics from './components/Statistics'
 import AddCaseForm from './components/AddCaseForm'
 import UploadFile from './components/UploadFile'
 import Login from './components/Login'
+import Sidebar from './components/Sidebar'
+import SummaryBar from './components/SummaryBar'
+import MonthQuickView from './components/MonthQuickView'
+import QuickCaseList from './components/QuickCaseList'
 import API_BASE from './apiConfig'
 
 function App() {
@@ -15,7 +19,10 @@ function App() {
   const [showSearch, setShowSearch] = useState(false)
   const [backendAvailable, setBackendAvailable] = useState(true)
   const [backendChecked, setBackendChecked] = useState(false)
-  const [activeFilter, setActiveFilter] = useState(null)
+  const [activeFilter, setActiveFilter] = useState(() => localStorage.getItem('activeFilter') || null)
+  const [activeView, setActiveView] = useState(() => localStorage.getItem('activeView') || 'dashboard')
+  const [selectedMonth, setSelectedMonth] = useState(() => localStorage.getItem('selectedMonth') || '')
+  const [selectedStatus, setSelectedStatus] = useState(() => localStorage.getItem('selectedStatus') || '')
 
   useEffect(() => {
     fetchCases()
@@ -23,16 +30,30 @@ function App() {
   }, [])
 
   const handleFilterClick = (filterKey) => {
+    if (filterKey.startsWith('status:')) {
+      const status = filterKey.replace('status:', '')
+      setSelectedStatus(status)
+    } else {
+      setSelectedStatus('')
+    }
     setActiveFilter((current) => (current === filterKey ? null : filterKey))
   }
 
   const clearFilter = () => {
     setActiveFilter(null)
+    setSelectedStatus('')
   }
 
   useEffect(() => {
     localStorage.setItem('isLoggedIn', isLoggedIn ? 'true' : 'false')
   }, [isLoggedIn])
+
+  useEffect(() => {
+    localStorage.setItem('activeView', activeView)
+    localStorage.setItem('selectedMonth', selectedMonth)
+    localStorage.setItem('selectedStatus', selectedStatus)
+    localStorage.setItem('activeFilter', activeFilter || '')
+  }, [activeView, selectedMonth, selectedStatus, activeFilter])
 
   const fetchCases = async () => {
     try {
@@ -244,64 +265,138 @@ function App() {
     return <Login onLogin={() => setIsLoggedIn(true)} />
   }
 
-  return (
-    <div className="min-h-screen bg-law-gray">
-      <header className="bg-law-red shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-law-white">Quản Lý Hồ Sơ Án</h1>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <button onClick={() => setShowSearch(!showSearch)} className="p-2 rounded-full hover:bg-[#7a0000] text-law-white">
-                <svg className="w-5 h-5 text-law-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-              {showSearch && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 p-4">
-                  <input
-                    type="text"
-                    placeholder="Tìm theo tên, loại án, trạng thái, ngày, biên lai..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8b0000]"
-                  />
-                </div>
-              )}
-            </div>
-            <div className="relative group">
-              <button className="p-2 rounded-full hover:bg-[#7a0000] text-law-white">
-                <svg className="w-5 h-5 text-law-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200">
-                <button onClick={handleLogout} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Đăng xuất</button>
+  const renderView = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Bảng Điều Khiển</h2>
+            
+            {/* Month Quick View */}
+            <MonthQuickView 
+              cases={cases} 
+              onViewDetails={(month) => {
+                setSelectedMonth(month)
+                setSelectedStatus('')
+              }}
+            />
+
+            {/* Summary for selected month */}
+            {selectedMonth && (
+              <SummaryBar cases={cases} selectedMonth={selectedMonth} />
+            )}
+
+            {/* General Statistics */}
+            <Statistics stats={stats} activeFilter={activeFilter} onFilterSelect={handleFilterClick} onClearFilter={clearFilter} />
+
+            {/* Quick Case List - shown for month, status, or deadline filters */}
+            {(selectedMonth || activeFilter) && (
+              <QuickCaseList 
+                cases={cases} 
+                selectedMonth={selectedMonth}
+                selectedStatus={selectedStatus}
+                selectedFilter={activeFilter}
+                onViewAll={() => setActiveView('cases')}
+                onClose={() => {
+                  setSelectedMonth('')
+                  setSelectedStatus('')
+                  clearFilter()
+                }}
+              />
+            )}
+          </div>
+        )
+      case 'cases':
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Danh Sách Hồ Sơ</h2>
+            <CaseTable
+              cases={filteredCases}
+              onCaseUpdate={updateCase}
+              onCaseDelete={deleteCase}
+              onCaseExport={exportCaseReport}
+              onBulkDelete={bulkDeleteCases}
+              onBulkExport={bulkExportCases}
+            />
+          </div>
+        )
+      case 'add-case':
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Thêm/Tải Hồ Sơ</h2>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-gray-700">Tải Lên Hồ Sơ</h3>
+                <UploadFile onUploadSuccess={handleCaseUpdated} backendAvailable={backendAvailable} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-gray-700">Thêm Hồ Sơ Mới</h3>
+                <AddCaseForm onCaseAdded={handleCaseUpdated} backendAvailable={backendAvailable} />
               </div>
             </div>
           </div>
-        </div>
-      </header>
-      <div className="container mx-auto p-4">
-        {!backendAvailable && backendChecked && (
-          <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
-            Đang kết nối máy chủ dữ liệu, vui lòng đợi giây lát...
+        )
+      case 'settings':
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Cài Đặt</h2>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <p className="text-gray-700 mb-4">Cài đặt hệ thống đang được phát triển.</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Thông tin hệ thống</label>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-600">Phiên bản: 1.0.0</p>
+                    <p className="text-sm text-gray-600">Trạng thái backend: {backendAvailable ? '✅ Hoạt động' : '❌ Ngoại tuyến'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        )
+      default:
+        return null
+    }
+  }
 
-        <Statistics stats={stats} activeFilter={activeFilter} onFilterSelect={handleFilterClick} onClearFilter={clearFilter} />
-        
-        <UploadFile onUploadSuccess={handleCaseUpdated} backendAvailable={backendAvailable} />
-        
-        <AddCaseForm onCaseAdded={handleCaseUpdated} backendAvailable={backendAvailable} />
-        
-        <CaseTable
-          cases={filteredCases}
-          onCaseUpdate={updateCase}
-          onCaseDelete={deleteCase}
-          onCaseExport={exportCaseReport}
-          onBulkDelete={bulkDeleteCases}
-          onBulkExport={bulkExportCases}
-        />
+  return (
+    <div className="flex h-screen bg-law-gray">
+      {/* Sidebar */}
+      <Sidebar activeView={activeView} onViewChange={setActiveView} onLogout={handleLogout} />
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ marginLeft: '16rem' }}>
+        {/* Top Header */}
+        <header className="bg-white shadow-sm border-l-4 border-l-law-red">
+          <div className="px-6 py-4 flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-law-red">Quản Lý Hồ Sơ Án</h1>
+            <div className="flex items-center space-x-4">
+              {backendAvailable ? (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+                  Kết nối
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-red-600">
+                  <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+                  Ngoại tuyến
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <main className="flex-1 overflow-auto">
+          <div className="p-6">
+            {!backendAvailable && backendChecked && (
+              <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
+                Đang kết nối máy chủ dữ liệu, vui lòng đợi giây lát...
+              </div>
+            )}
+            {renderView()}
+          </div>
+        </main>
       </div>
     </div>
   )

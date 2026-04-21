@@ -66,3 +66,15 @@ body {
 .bg-law-gold {
   background-color: var(--law-gold) !important;
 }
+
+.bg-law-navy-dark {
+  background-color: var(--law-navy-dark) !important;
+}
+
+.bg-law-navy-light {
+  background-color: var(--law-navy) !important;
+}
+
+.text-law-gold {
+  color: var(--law-gold) !important;
+}

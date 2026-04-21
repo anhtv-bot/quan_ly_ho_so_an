@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { Search, X, Filter } from 'lucide-react'
 
 const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDelete, onBulkExport }) => {
   const [editingId, setEditingId] = useState(null)
@@ -6,6 +7,9 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selectedCaseIds, setSelectedCaseIds] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [monthFilter, setMonthFilter] = useState('')
 
   const getStatusColor = (caseItem) => {
     const status = caseItem.trang_thai_giai_quyet?.toString() || ''
@@ -64,9 +68,35 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
     'Cai nghiện'
   ]
 
-  const totalPages = Math.max(1, Math.ceil(cases.length / pageSize))
+  // Filter cases based on search, status, and month
+  const filteredCases = useMemo(() => {
+    return cases.filter((caseItem) => {
+      // Search filter
+      const searchLower = searchTerm.toLowerCase()
+      const matchesSearch =
+        !searchTerm ||
+        (caseItem.so_thu_ly && caseItem.so_thu_ly.toLowerCase().includes(searchLower)) ||
+        (caseItem.duong_su && caseItem.duong_su.toLowerCase().includes(searchLower))
+
+      // Status filter
+      const matchesStatus = !statusFilter || caseItem.trang_thai_giai_quyet === statusFilter
+
+      // Month filter
+      let matchesMonth = true
+      if (monthFilter) {
+        const [year, month] = monthFilter.split('-')
+        const caseDate = new Date(caseItem.ngay_thu_ly)
+        matchesMonth =
+          caseDate.getFullYear() === parseInt(year) && caseDate.getMonth() + 1 === parseInt(month)
+      }
+
+      return matchesSearch && matchesStatus && matchesMonth
+    })
+  }, [cases, searchTerm, statusFilter, monthFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredCases.length / pageSize))
   const startIndex = (currentPage - 1) * pageSize
-  const visibleCases = cases.slice(startIndex, startIndex + pageSize)
+  const visibleCases = filteredCases.slice(startIndex, startIndex + pageSize)
 
   const getCaseCategory = (caseItem) => {
     const now = new Date()
@@ -184,6 +214,101 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
   return (
     <div className="bg-white rounded-lg shadow-md p-6 card-law">
       <h2 className="text-xl font-semibold mb-4 text-law-red">Danh Sách Án</h2>
+
+      {/* Search and Filter Controls */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Tìm theo số thụ lý hoặc tên đương sự..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => {
+                setSearchTerm('')
+                setCurrentPage(1)
+              }}
+              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Status Filter */}
+        <div>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Tất cả trạng thái</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Month Filter */}
+        <div className="flex gap-2">
+          <input
+            type="month"
+            value={monthFilter}
+            onChange={(e) => {
+              setMonthFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {monthFilter && (
+            <button
+              onClick={() => {
+                setMonthFilter('')
+                setCurrentPage(1)
+              }}
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+              title="Xóa bộ lọc tháng"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Active Filters Display */}
+      {(searchTerm || statusFilter || monthFilter) && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+          <div className="text-sm text-gray-700">
+            <Filter className="w-4 h-4 inline mr-2" />
+            Đang lọc: {filteredCases.length} kết quả (từ {cases.length} tổng số)
+          </div>
+          <button
+            onClick={() => {
+              setSearchTerm('')
+              setStatusFilter('')
+              setMonthFilter('')
+              setCurrentPage(1)
+            }}
+            className="text-sm px-2 py-1 bg-white border border-blue-300 rounded hover:bg-blue-50 transition"
+          >
+            Xóa tất cả bộ lọc
+          </button>
+        </div>
+      )}
+
       {selectedCaseIds.length > 0 && (
         <div className="mb-4 rounded-lg bg-[#f8fafc] border border-blue-200 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm text-gray-700">
@@ -223,7 +348,7 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
               <th className="px-4 py-2 text-left">Số Thụ Lý</th>
               <th className="px-4 py-2 text-left">Ngày Thụ Lý</th>
               <th className="px-4 py-2 text-left">Đương Sự</th>
-              <th className="px-4 py-2 text-left">Quan Hệ Pháp Luật</th>
+              <th className="px-4 py-2 text-left text-law-red font-semibold">Quan Hệ Pháp Luật</th>
               <th className="px-4 py-2 text-left">Ngày Xét Xử</th>
               <th className="px-4 py-2 text-left">QĐ CNSTT</th>
               <th className="px-4 py-2 text-left min-w-[220px]">Trạng Thái Giải Quyết</th>
@@ -278,7 +403,7 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
                     caseItem.duong_su || ''
                   )}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 text-law-red">
                   {editingId === caseItem.id ? (
                     <input
                       className="w-full border rounded px-2 py-1"
@@ -415,7 +540,8 @@ const CaseTable = ({ cases, onCaseUpdate, onCaseDelete, onCaseExport, onBulkDele
       </div>
       <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="text-sm text-gray-600">
-          Hiển thị {visibleCases.length} trên {cases.length} án
+          Hiển thị {visibleCases.length} trên {filteredCases.length} án
+          {filteredCases.length < cases.length && ` (tổng số ${cases.length} án)`}
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="flex items-center gap-2 text-sm text-gray-700">
